@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>数据结构五维教学实验室</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=0.8.1" />
 </head>
 <body>
   <header class="topbar">
@@ -55,7 +55,10 @@
         <div id="renderer-badge" class="renderer-badge">renderer: waiting</div>
       </div>
       <div id="pointer-graph" class="pointer-graph" aria-label="数据结构语义图"><div class="pointer-empty">等待运行…</div></div>
-      <pre id="pointer-output" class="pointer-raw">等待运行…</pre>
+      <details class="snapshot-details">
+        <summary>查看标准化 Snapshot 数据</summary>
+        <pre id="pointer-output" class="pointer-raw">等待运行…</pre>
+      </details>
     </section>
 
     <section class="timeline-card">
@@ -74,6 +77,7 @@
     </section>
   </main>
 
-  <script src="./app.js"></script>
+  <script src="./app.js?v=0.8.1"></script>
+  <script src="./array-renderer.js?v=0.8.1"></script>
 </body>
 </html>
