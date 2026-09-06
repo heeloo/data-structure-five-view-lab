@@ -13,16 +13,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-APP_VERSION = "0.4.0"
+APP_VERSION = "0.5.0"
 app = FastAPI(title="Data Structure Five-View Lab API", version=APP_VERSION)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://heeloo.github.io",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=["https://heeloo.github.io", "http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
@@ -37,18 +33,7 @@ def utf8_json(data, status_code: int = 200) -> Response:
     )
 
 
-DEMOS = {
-    "linked-list-insert": {
-        "title": "单链表：头插一个新结点",
-        "pseudo": [
-            "1. 创建原结点 a，并令 head = a",
-            "2. 申请新结点 s",
-            "3. s->next = head",
-            "4. head = s",
-        ],
-        "display_source": """typedef struct Node {\n    int data;\n    struct Node *next;\n} Node;\n\nint main(void) {\n    Node *head = NULL;\n    Node *a = malloc(sizeof(Node));\n    Node *s = NULL;\n\n    a->data = 10;\n    a->next = NULL;\n    head = a;\n\n    s = malloc(sizeof(Node));\n    s->data = 20;\n    s->next = head;\n    head = s;\n}\n""",
-        "source": r'''
-#include <stdio.h>
+DEMO_SOURCE = r'''#include <stdio.h>
 #include <stdlib.h>
 
 typedef struct Node {
@@ -61,7 +46,6 @@ static void snap(const char *step, Node **head_var, Node **a_var, Node **s_var) 
     Node *head = *head_var;
     Node *a = *a_var;
     Node *s = *s_var;
-
     printf("SNAPSHOT:{\"step\":\"%s\",", step);
     printf("\"stack\":{\"head_var\":\"%p\",\"a_var\":\"%p\",\"s_var\":\"%p\"},", (void*)head_var, (void*)a_var, (void*)s_var);
     printf("\"values\":{\"head\":\"%p\",\"a\":\"%p\",\"s\":\"%p\"},", (void*)head, (void*)a, (void*)s);
@@ -69,17 +53,10 @@ static void snap(const char *step, Node **head_var, Node **a_var, Node **s_var) 
     if (a) printf("{\"name\":\"a\",\"address\":\"%p\",\"data\":%d,\"next\":\"%p\"}", (void*)a, a->data, (void*)a->next);
     if (a && s) printf(",");
     if (s) printf("{\"name\":\"s\",\"address\":\"%p\",\"data\":%d,\"next\":\"%p\"}", (void*)s, s->data, (void*)s->next);
-    printf("],");
-    printf("\"pointer_edges\":[");
+    printf("],\"pointer_edges\":[");
     int emitted = 0;
-    if (head) {
-        printf("{\"from\":\"head\",\"to\":\"%p\"}", (void*)head);
-        emitted = 1;
-    }
-    if (s && s->next) {
-        if (emitted) printf(",");
-        printf("{\"from\":\"s.next\",\"to\":\"%p\"}", (void*)s->next);
-    }
+    if (head) { printf("{\"from\":\"head\",\"to\":\"%p\"}", (void*)head); emitted = 1; }
+    if (s && s->next) { if (emitted) printf(","); printf("{\"from\":\"s.next\",\"to\":\"%p\"}", (void*)s->next); }
     printf("]}\n");
 }
 
@@ -93,41 +70,65 @@ int main(void) {
     a->data = 10;
     a->next = NULL;
     head = a;
-    snap("原始链表", &head, &a, &s);
+    snap("原始链表", &head, &a, &s); /* TRACE_STAGE_1 */
 
     s = (Node*)malloc(sizeof(Node));
     if (!s) return 3;
     s->data = 20;
     s->next = NULL;
-    snap("已分配新结点 s", &head, &a, &s);
+    snap("已分配新结点 s", &head, &a, &s); /* TRACE_STAGE_2 */
 
     s->next = head;
-    snap("s->next = head", &head, &a, &s);
+    snap("s->next = head", &head, &a, &s); /* TRACE_STAGE_3 */
 
     head = s;
-    snap("head = s（插入完成）", &head, &a, &s);
+    snap("head = s（插入完成）", &head, &a, &s); /* TRACE_STAGE_4 */
 
     printf("PROGRAM_STDOUT:final head=%d -> %d\n", head->data, head->next->data);
     free(s);
     free(a);
     return 0;
 }
-''',
+'''
+
+DISPLAY_SOURCE = """typedef struct Node {
+    int data;
+    struct Node *next;
+} Node;
+
+int main(void) {
+    Node *head = NULL;
+    Node *a = malloc(sizeof(Node));
+    Node *s = NULL;
+
+    a->data = 10;
+    a->next = NULL;
+    head = a;
+
+    s = malloc(sizeof(Node));
+    s->data = 20;
+    s->next = NULL;
+
+    s->next = head;
+    head = s;
+}
+"""
+
+DISPLAY_STAGE_LINES = [14, 18, 20, 21]
+DISPLAY_STAGE_TEXT = ["head = a;", "s->next = NULL;", "s->next = head;", "head = s;"]
+
+DEMOS = {
+    "linked-list-insert": {
+        "title": "单链表：头插一个新结点",
+        "pseudo": ["1. 创建原结点 a，并令 head = a", "2. 申请新结点 s", "3. s->next = head", "4. head = s"],
+        "display_source": DISPLAY_SOURCE,
+        "source": DEMO_SOURCE,
     }
 }
 
-
-LLDB_PROBE_SOURCE = r'''
-#include <stdio.h>
-__attribute__((noinline)) static int probe(int x) {
-    volatile int y = x + 1;
-    return y;
-}
-int main(void) {
-    int answer = probe(41);
-    printf("%d\n", answer);
-    return answer == 42 ? 0 : 1;
-}
+LLDB_PROBE_SOURCE = r'''#include <stdio.h>
+__attribute__((noinline)) static int probe(int x) { volatile int y = x + 1; return y; }
+int main(void) { int answer = probe(41); printf("%d\n", answer); return answer == 42 ? 0 : 1; }
 '''
 
 
@@ -144,29 +145,28 @@ def _limit_child() -> None:
 
 
 def _clang_compile(source: str, td: str, name: str = "demo") -> tuple[Path, subprocess.CompletedProcess]:
-    td_path = Path(td)
-    src = td_path / f"{name}.c"
-    exe = td_path / name
+    src = Path(td) / f"{name}.c"
+    exe = Path(td) / name
     src.write_text(source, encoding="utf-8")
     proc = subprocess.run(
         ["clang", "-std=c11", "-O0", "-g", "-fno-omit-frame-pointer", str(src), "-o", str(exe)],
-        cwd=td,
-        capture_output=True,
-        text=True,
-        timeout=8,
+        cwd=td, capture_output=True, text=True, timeout=8,
         env={"PATH": os.environ.get("PATH", "/usr/bin:/bin")},
     )
     return exe, proc
 
 
+def _trace_lines(source: str) -> list[int]:
+    lines = source.splitlines()
+    return [next(i for i, line in enumerate(lines, 1) if f"TRACE_STAGE_{stage}" in line) for stage in range(1, 5)]
+
+
 def _parse_program_output(text: str) -> tuple[list[dict], str]:
-    snapshots: list[dict] = []
-    stdout_lines: list[str] = []
+    snapshots, stdout_lines = [], []
     for line in text.splitlines():
         if "SNAPSHOT:" in line:
-            payload = line.split("SNAPSHOT:", 1)[1].strip()
             try:
-                snapshots.append(json.loads(payload))
+                snapshots.append(json.loads(line.split("SNAPSHOT:", 1)[1].strip()))
             except json.JSONDecodeError:
                 pass
         if "PROGRAM_STDOUT:" in line:
@@ -175,59 +175,67 @@ def _parse_program_output(text: str) -> tuple[list[dict], str]:
 
 
 def _run_demo_instrumented(exe: Path, td: str) -> tuple[list[dict], str]:
-    run_proc = subprocess.run(
-        [str(exe)], cwd=td, capture_output=True, text=True, timeout=3,
-        preexec_fn=_limit_child, env={"PATH": "/usr/bin:/bin"},
-    )
-    if run_proc.returncode != 0:
-        raise HTTPException(status_code=500, detail={"runtime_error": run_proc.stderr[-4000:]})
-    return _parse_program_output(run_proc.stdout)
+    proc = subprocess.run([str(exe)], cwd=td, capture_output=True, text=True, timeout=3, preexec_fn=_limit_child, env={"PATH": "/usr/bin:/bin"})
+    if proc.returncode != 0:
+        raise HTTPException(status_code=500, detail={"runtime_error": proc.stderr[-4000:]})
+    return _parse_program_output(proc.stdout)
 
 
-def _run_demo_lldb(exe: Path, td: str) -> dict:
-    commands = [
-        "breakpoint set --name snap",
-        "run",
-        "frame variable step head_var a_var s_var",
-        "continue",
-        "frame variable step head_var a_var s_var",
-        "continue",
-        "frame variable step head_var a_var s_var",
-        "continue",
-        "frame variable step head_var a_var s_var",
-        "continue",
-    ]
+def _extract_frame_blocks(text: str) -> list[str]:
+    marker = "FIVEVIEW_FRAME_BEGIN"
+    return [part.split("FIVEVIEW_FRAME_END", 1)[0].strip() for part in text.split(marker)[1:] if "FIVEVIEW_FRAME_END" in part]
+
+
+def _run_demo_lldb(exe: Path, td: str, source: str) -> dict:
+    trace_lines = _trace_lines(source)
+    commands = []
+    for line in trace_lines:
+        commands.append(f"breakpoint set --file demo.c --line {line}")
+    commands.append("run")
+    for i in range(4):
+        commands.extend([
+            "script print('FIVEVIEW_FRAME_BEGIN')",
+            "frame info",
+            "frame variable head a s",
+            "expression -- &head",
+            "expression -- &a",
+            "expression -- &s",
+            "bt 3",
+            "script print('FIVEVIEW_FRAME_END')",
+            "continue",
+        ])
+
     argv = ["lldb", "--batch"]
     for cmd in commands:
         argv.extend(["-o", cmd])
     argv.append(str(exe))
-
-    dbg = subprocess.run(
-        argv, cwd=td, capture_output=True, text=True, timeout=15,
-        env={"PATH": os.environ.get("PATH", "/usr/bin:/bin")},
-    )
+    dbg = subprocess.run(argv, cwd=td, capture_output=True, text=True, timeout=18, env={"PATH": os.environ.get("PATH", "/usr/bin:/bin")})
     combined = f"{dbg.stdout}\n{dbg.stderr}"
     snapshots, program_stdout = _parse_program_output(combined)
+    frame_blocks = _extract_frame_blocks(combined)
     breakpoint_hits = len(re.findall(r"stop reason = breakpoint", combined, flags=re.IGNORECASE))
-    frame_reads = len(re.findall(r"head_var\s*=", combined))
-    success = dbg.returncode == 0 and breakpoint_hits >= 4 and len(snapshots) == 4
 
-    for i, snap in enumerate(snapshots):
+    for i, snap in enumerate(snapshots[:4]):
+        block = frame_blocks[i] if i < len(frame_blocks) else ""
         snap["debugger"] = {
             "engine": "lldb",
-            "breakpoint": "snap",
-            "hit": i + 1,
-            "frame_variables_read": frame_reads >= i + 1,
+            "breakpoint_hit": i + 1,
+            "compiled_source_line": trace_lines[i],
+            "display_source_line": DISPLAY_STAGE_LINES[i],
+            "display_source_text": DISPLAY_STAGE_TEXT[i],
+            "frame_variables_read": all(name in block for name in ["head", "a", "s"]),
+            "frame_excerpt": block[-1800:],
         }
 
+    success = dbg.returncode == 0 and breakpoint_hits >= 4 and len(snapshots) == 4 and len(frame_blocks) >= 4
     return {
         "success": success,
         "snapshots": snapshots,
         "stdout": program_stdout,
         "breakpoint_hits": breakpoint_hits,
-        "frame_reads": frame_reads,
+        "frame_reads": len(frame_blocks),
         "returncode": dbg.returncode,
-        "trace": combined[-7000:],
+        "trace": combined[-9000:],
     }
 
 
@@ -235,23 +243,18 @@ def _run_demo(demo_id: str) -> dict:
     demo = DEMOS.get(demo_id)
     if demo is None:
         raise HTTPException(status_code=404, detail="Unknown demo_id")
-
     with tempfile.TemporaryDirectory(prefix="fiveview-") as td:
         exe, compile_proc = _clang_compile(demo["source"], td)
         if compile_proc.returncode != 0:
             raise HTTPException(status_code=500, detail={"compile_error": compile_proc.stderr[-4000:]})
-
-        lldb_result = _run_demo_lldb(exe, td)
+        lldb_result = _run_demo_lldb(exe, td, demo["source"])
         if lldb_result["success"]:
-            snapshots = lldb_result["snapshots"]
-            program_stdout = lldb_result["stdout"]
-            engine = "lldb"
-            fallback = False
+            snapshots, program_stdout, engine, fallback = lldb_result["snapshots"], lldb_result["stdout"], "lldb-source-line", False
         else:
             snapshots, program_stdout = _run_demo_instrumented(exe, td)
-            engine = "instrumentation-fallback"
-            fallback = True
-
+            for i, snap in enumerate(snapshots[:4]):
+                snap["debugger"] = {"engine": "instrumentation-fallback", "display_source_line": DISPLAY_STAGE_LINES[i], "display_source_text": DISPLAY_STAGE_TEXT[i]}
+            engine, fallback = "instrumentation-fallback", True
         return {
             "demo_id": demo_id,
             "title": demo["title"],
@@ -264,57 +267,38 @@ def _run_demo(demo_id: str) -> dict:
             "lldb_frame_reads": lldb_result["frame_reads"],
             "lldb_fallback": fallback,
             "lldb_trace": lldb_result["trace"],
-            "storage_semantics": "stack.*_var 是 main() 局部指针变量本身的真实存储地址；values.* 是变量当前保存的指针值。LLDB 在每次 snap() 入口断点停止，同一被调试进程随后输出该步结构化快照。",
-            "address_note": "本次地址来自由 LLDB 启动的 Render 容器 C 进程；ASLR 会使不同运行的地址变化。",
+            "timeline_mode": "source-line",
+            "storage_semantics": "LLDB 在 main() 的关键源码行停止并直接读取 head、a、s；结构化快照来自同一被调试进程。",
+            "address_note": "地址来自本次 Render 容器中的真实 C 调试进程；ASLR 会使不同运行地址变化。",
             "snapshots": snapshots,
             "stdout": program_stdout,
         }
 
 
 def _debugger_capability() -> dict:
-    result = {
-        "available": False, "clang": False, "lldb_installed": False,
-        "ptrace_or_launch": False, "lldb_version": "",
-        "summary": "LLDB capability test did not complete.",
-    }
+    result = {"available": False, "clang": False, "lldb_installed": False, "ptrace_or_launch": False, "lldb_version": "", "summary": "LLDB capability test did not complete."}
     try:
-        ver = subprocess.run(
-            ["lldb", "--version"], capture_output=True, text=True, timeout=5,
-            env={"PATH": os.environ.get("PATH", "/usr/bin:/bin")},
-        )
+        ver = subprocess.run(["lldb", "--version"], capture_output=True, text=True, timeout=5, env={"PATH": os.environ.get("PATH", "/usr/bin:/bin")})
         result["lldb_installed"] = ver.returncode == 0
         result["lldb_version"] = (ver.stdout or ver.stderr).splitlines()[0][:300] if (ver.stdout or ver.stderr) else ""
     except Exception as exc:
         result["summary"] = f"lldb --version failed: {type(exc).__name__}"
         return result
-
     with tempfile.TemporaryDirectory(prefix="fiveview-lldb-") as td:
-        exe, compile_proc = _clang_compile(LLDB_PROBE_SOURCE, td, name="probe")
+        exe, compile_proc = _clang_compile(LLDB_PROBE_SOURCE, td, "probe")
         result["clang"] = compile_proc.returncode == 0
         if compile_proc.returncode != 0:
-            result["summary"] = "Clang could not compile the LLDB probe."
             return result
         try:
-            dbg = subprocess.run(
-                ["lldb", "--batch", "-o", "breakpoint set --name probe", "-o", "run", "-o", "frame variable x", "-o", "bt", str(exe)],
-                cwd=td, capture_output=True, text=True, timeout=12,
-                env={"PATH": os.environ.get("PATH", "/usr/bin:/bin")},
-            )
+            dbg = subprocess.run(["lldb", "--batch", "-o", "breakpoint set --name probe", "-o", "run", "-o", "frame variable x", "-o", "bt", str(exe)], cwd=td, capture_output=True, text=True, timeout=12, env={"PATH": os.environ.get("PATH", "/usr/bin:/bin")})
         except subprocess.TimeoutExpired:
-            result["summary"] = "LLDB probe timed out; debugger launch/ptrace may be restricted."
+            result["summary"] = "LLDB probe timed out."
             return result
         combined = f"{dbg.stdout}\n{dbg.stderr}"
-        stopped = "stop reason = breakpoint" in combined.lower()
-        saw_x = "x = 41" in combined
+        stopped, saw_x = "stop reason = breakpoint" in combined.lower(), "x = 41" in combined
         result["ptrace_or_launch"] = stopped
         result["available"] = dbg.returncode == 0 and stopped and saw_x
-        result["summary"] = (
-            "LLDB can launch the fixed debug binary, stop at a breakpoint, and read a frame variable."
-            if result["available"] else
-            "LLDB is installed, but breakpoint/frame-variable debugging was not confirmed in this container."
-        )
-        result["probe_stdout"] = dbg.stdout[-2500:]
-        result["probe_stderr"] = dbg.stderr[-1500:]
+        result["summary"] = "LLDB can launch, stop at breakpoints, and read frame variables." if result["available"] else "LLDB installed but source debugging not confirmed."
         return result
 
 
@@ -322,30 +306,22 @@ def _debugger_capability() -> dict:
 def root():
     return utf8_json({"service": "five-view-lab-backend", "status": "ok", "docs": "/docs"})
 
-
 @app.get("/health")
 def health():
     return utf8_json({"status": "ok", "service": "five-view-lab-backend", "version": APP_VERSION})
-
 
 @app.get("/api/demos")
 def list_demos():
     return utf8_json([{"id": key, "title": value["title"]} for key, value in DEMOS.items()])
 
-
 @app.get("/api/debugger-capability")
 def debugger_capability():
     return utf8_json(_debugger_capability())
-
 
 @app.post("/api/run-demo")
 def run_demo(req: DemoRequest):
     return utf8_json(_run_demo(req.demo_id))
 
-
 @app.post("/api/execute")
 def execute_disabled():
-    raise HTTPException(
-        status_code=403,
-        detail="Arbitrary C execution is disabled. Use /api/run-demo with a whitelisted teaching demo.",
-    )
+    raise HTTPException(status_code=403, detail="Arbitrary C execution is disabled. Use /api/run-demo with a whitelisted teaching demo.")
