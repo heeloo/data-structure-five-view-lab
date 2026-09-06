@@ -1,0 +1,168 @@
+.linear-legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  color: #9fb4cc;
+  font-size: 12px;
+}
+
+.linear-legend span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.stack-visual {
+  min-width: 720px;
+  padding: 26px 34px 30px;
+}
+
+.stack-body {
+  display: grid;
+  grid-template-columns: minmax(360px, 520px) minmax(190px, 1fr);
+  align-items: center;
+  gap: 56px;
+  margin: 24px auto 0;
+  max-width: 900px;
+}
+
+.stack-column {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 8px 58px 8px 86px;
+  border-bottom: 4px solid #355c7d;
+  position: relative;
+}
+
+.stack-column::before,
+.stack-column::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: 4px;
+  height: calc(100% - 8px);
+  background: #355c7d;
+  border-radius: 4px 4px 0 0;
+}
+
+.stack-column::before { left: 78px; }
+.stack-column::after { right: 50px; }
+
+.stack-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 54px minmax(80px, 1fr) 104px;
+  align-items: center;
+  min-height: 54px;
+  padding: 8px 14px;
+  border: 1.5px solid #4b7ca8;
+  border-radius: 9px;
+  background: #0d2137;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  transition: transform .2s ease, opacity .2s ease, border-color .2s ease;
+}
+
+.stack-row.is-unused {
+  background: #091522;
+  border-color: #263b50;
+  border-style: dashed;
+  opacity: .58;
+}
+
+.stack-row.is-top {
+  border: 3px solid #8bc6ff;
+  transform: translateX(8px);
+  box-shadow: 0 0 0 4px rgba(139, 198, 255, .09);
+  opacity: 1;
+}
+
+.stack-index { color: #9fb4cc; font-size: 12px; }
+.stack-value { color: #f4f9ff; font-size: 22px; font-weight: 800; text-align: center; }
+.stack-address { color: #88bce8; font-size: 10px; text-align: right; }
+
+.stack-top-marker {
+  position: absolute;
+  right: calc(100% + 12px);
+  color: #8bc6ff;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.stack-stale {
+  position: absolute;
+  left: calc(100% + 12px);
+  color: #d8ae68;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.linear-meta {
+  display: grid;
+  gap: 10px;
+}
+
+.linear-meta div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px 14px;
+  border: 1px solid #203c58;
+  border-radius: 10px;
+  background: #081422;
+}
+
+.linear-meta strong { color: #8fa7bf; font-size: 11px; }
+.linear-meta span { color: #f4f9ff; font: 700 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+.pointer-graph svg.queue-ring {
+  width: 100%;
+  min-width: 760px;
+  height: 440px;
+  min-height: 440px;
+}
+
+.queue-orbit {
+  fill: none;
+  stroke: #1c3a56;
+  stroke-width: 46;
+  stroke-dasharray: 2 9;
+}
+
+.queue-cell rect {
+  fill: #0d2137;
+  stroke: #4b7ca8;
+  stroke-width: 1.5;
+}
+
+.queue-cell.is-unused rect {
+  fill: #091522;
+  stroke: #263b50;
+  stroke-dasharray: 5 4;
+}
+
+.queue-cell.is-front rect { stroke: #74e6b3; stroke-width: 3; }
+.queue-cell.is-rear rect { stroke: #c0a7ff; stroke-width: 3; }
+.queue-cell.is-front.is-rear rect { stroke: #f2cf75; }
+.queue-index { fill: #9fb4cc; font: 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.queue-value { fill: #f4f9ff; font: 800 20px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.queue-address { fill: #88bce8; font: 8px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.queue-pointer { font: 800 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.queue-pointer.front { fill: #74e6b3; }
+.queue-pointer.rear { fill: #c0a7ff; }
+.queue-pointer-line { fill: none; stroke-width: 2; }
+.queue-pointer-line.front { stroke: #74e6b3; }
+.queue-pointer-line.rear { stroke: #c0a7ff; stroke-dasharray: 5 4; }
+.queue-front-head { fill: #74e6b3; }
+.queue-rear-head { fill: #c0a7ff; }
+.queue-center-title { fill: #7cc3ff; font: 800 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .08em; }
+.queue-center-value { fill: #f4f9ff; font: 800 20px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.queue-center-note { fill: #89a2bd; font: 10px ui-sans-serif, system-ui, sans-serif; }
+.queue-wrap-note { fill: #f2cf75; font: 800 11px ui-sans-serif, system-ui, sans-serif; }
+.queue-footer { fill: #9ed6ff; font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+@media (max-width: 900px) {
+  .stack-body { grid-template-columns: 1fr; gap: 24px; }
+  .linear-meta { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+}
