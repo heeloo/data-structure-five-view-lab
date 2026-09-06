@@ -9,9 +9,10 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 from pydantic import BaseModel
 
-app = FastAPI(title="Data Structure Five-View Lab API", version="0.2.0")
+app = FastAPI(title="Data Structure Five-View Lab API", version="0.2.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,6 +25,16 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+
+def utf8_json(data, status_code: int = 200) -> Response:
+    """Return JSON with an explicit UTF-8 charset to avoid mojibake in browsers/proxies."""
+    return Response(
+        content=json.dumps(data, ensure_ascii=False, separators=(",", ":")),
+        status_code=status_code,
+        media_type="application/json; charset=utf-8",
+    )
+
 
 # Phase 1 deliberately runs only server-owned, whitelisted teaching demos.
 # It does NOT accept arbitrary C source from the browser.
@@ -97,7 +108,6 @@ class DemoRequest(BaseModel):
 
 
 def _limit_child() -> None:
-    # Tight limits for the fixed teaching binary.
     resource.setrlimit(resource.RLIMIT_CPU, (2, 2))
     resource.setrlimit(resource.RLIMIT_AS, (128 * 1024 * 1024, 128 * 1024 * 1024))
     resource.setrlimit(resource.RLIMIT_FSIZE, (2 * 1024 * 1024, 2 * 1024 * 1024))
@@ -164,22 +174,22 @@ def _run_demo(demo_id: str) -> dict:
 
 @app.get("/")
 def root():
-    return {"service": "five-view-lab-backend", "status": "ok", "docs": "/docs"}
+    return utf8_json({"service": "five-view-lab-backend", "status": "ok", "docs": "/docs"})
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "five-view-lab-backend", "version": "0.2.0"}
+    return utf8_json({"status": "ok", "service": "five-view-lab-backend", "version": "0.2.1"})
 
 
 @app.get("/api/demos")
 def list_demos():
-    return [{"id": key, "title": value["title"]} for key, value in DEMOS.items()]
+    return utf8_json([{"id": key, "title": value["title"]} for key, value in DEMOS.items()])
 
 
 @app.post("/api/run-demo")
 def run_demo(req: DemoRequest):
-    return _run_demo(req.demo_id)
+    return utf8_json(_run_demo(req.demo_id))
 
 
 @app.post("/api/execute")
