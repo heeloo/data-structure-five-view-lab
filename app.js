@@ -12,6 +12,7 @@ const counterEl = document.getElementById("snapshot-counter");
 const noteEl = document.getElementById("snapshot-note");
 
 let snapshots = [];
+let runMeta = {};
 
 function api(path) {
   return `${BACKEND_URL.replace(/\/$/, "")}${path}`;
@@ -66,12 +67,17 @@ function renderSnapshot(index) {
     .join("\n");
   pointerEl.textContent = `${valueLines}\n\n${edges || "暂无指针边"}`;
 
-  executionEl.textContent = `STEP ${index + 1}\n${snap.step}\n\n当前堆结点数: ${(snap.heap || []).length}`;
+  const dbg = snap.debugger || {};
+  const engineLine = runMeta.execution_engine === "lldb"
+    ? `LLDB BREAKPOINT ${dbg.hit || index + 1}/${runMeta.lldb_breakpoint_hits || snapshots.length}`
+    : `ENGINE ${runMeta.execution_engine || "unknown"}`;
+  const frameLine = dbg.frame_variables_read ? "frame variable: 已读取" : "frame variable: 未确认";
+  executionEl.textContent = `${engineLine}\n${frameLine}\n\nSTEP ${index + 1}\n${snap.step}\n\n当前堆结点数: ${(snap.heap || []).length}`;
 }
 
 async function runDemo() {
   runButton.disabled = true;
-  runButton.textContent = "正在 Clang 编译并运行…";
+  runButton.textContent = "正在 Clang + LLDB 调试运行…";
   try {
     const r = await fetch(api("/api/run-demo"), {
       method: "POST",
@@ -84,7 +90,12 @@ async function runDemo() {
     pseudoEl.textContent = (data.pseudo || []).join("\n");
     cEl.textContent = data.display_source || "后端白名单源码";
     snapshots = data.snapshots || [];
-    stdoutEl.textContent = `stdout: ${data.stdout || "（无输出）"}`;
+    runMeta = data;
+
+    const engineText = data.execution_engine === "lldb"
+      ? `LLDB 驱动 · 断点命中 ${data.lldb_breakpoint_hits || 0} 次 · frame read ${data.lldb_frame_reads || 0} 次`
+      : `回退模式：${data.execution_engine || "unknown"}`;
+    stdoutEl.textContent = `${engineText}\nstdout: ${data.stdout || "（无输出）"}`;
     noteEl.textContent = [data.storage_semantics, data.address_note].filter(Boolean).join(" ") || "运行完成";
 
     slider.disabled = snapshots.length <= 1;
@@ -97,7 +108,7 @@ async function runDemo() {
     executionEl.textContent = `运行失败\n${e.message}`;
   } finally {
     runButton.disabled = false;
-    runButton.textContent = "再次运行真实 C 演示";
+    runButton.textContent = "再次运行 LLDB 演示";
   }
 }
 
