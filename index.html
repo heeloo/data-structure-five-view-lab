@@ -18,37 +18,31 @@
 
   <main>
     <section class="notice">
-      <strong>GitHub Pages + Render + LLDB</strong>
-      <span>Clang 编译、LLDB 源码级断点、真实栈/堆地址和五维时间轴已经联通。</span>
+      <strong>GitHub Pages + Render + Clang + LLDB</strong>
+      <span>从单一演示扩展为可切换算法实验；所有实验仍由白名单 C 程序真实编译和源码级调试。</span>
     </section>
 
     <section class="demo-toolbar">
-      <div>
-        <div class="eyebrow">LIVE DEMO · v0.6 UI</div>
-        <h2>单链表头插：源码级真实地址动态</h2>
-        <p>每次运行重新编译并由 LLDB 驱动。C 行、栈变量、堆结点、指针图和执行阶段共享同一时间轴。</p>
+      <div class="demo-copy">
+        <div class="eyebrow">LIVE DEMO · v0.7 MULTI-ALGORITHM</div>
+        <h2 id="demo-title">数据结构算法实验</h2>
+        <p id="demo-subtitle">选择一个算法，由 LLDB 驱动 C 行、栈、堆、指针图和执行阶段同步变化。</p>
       </div>
-      <button id="run-demo" type="button">运行真实 C 演示</button>
+      <div class="demo-actions">
+        <label class="demo-select-label">算法
+          <select id="demo-select" aria-label="选择教学算法">
+            <option value="linked-list-insert">单链表：头插一个新结点</option>
+          </select>
+        </label>
+        <button id="run-demo" type="button">运行真实 C 演示</button>
+      </div>
     </section>
 
     <section class="views views-top">
-      <article>
-        <h2>PSEUDO</h2>
-        <pre id="pseudo-output">等待运行…</pre>
-      </article>
-      <article>
-        <h2>C</h2>
-        <p>Clang · -O0 · -g · LLDB source-line</p>
-        <pre id="c-output">后端白名单源码</pre>
-      </article>
-      <article>
-        <h2>STORAGE</h2>
-        <pre id="storage-output">等待运行…</pre>
-      </article>
-      <article>
-        <h2>EXECUTION</h2>
-        <pre id="execution-output">等待运行…</pre>
-      </article>
+      <article><h2>PSEUDO</h2><pre id="pseudo-output">等待运行…</pre></article>
+      <article><h2>C</h2><p>Clang · -O0 · -g · LLDB source-line</p><pre id="c-output">后端白名单源码</pre></article>
+      <article><h2>STORAGE</h2><pre id="storage-output">等待运行…</pre></article>
+      <article><h2>EXECUTION</h2><pre id="execution-output">等待运行…</pre></article>
     </section>
 
     <section class="pointer-stage">
@@ -56,30 +50,21 @@
         <div>
           <div class="eyebrow">POINTER · LIVE MEMORY GRAPH</div>
           <h2>指针关系动态图</h2>
-          <p>独立宽屏窗格显示 head、s、结点地址与 next 连接，避免在五列布局中被压缩。</p>
+          <p>宽屏显示当前 head、临时指针、结点地址与 next 连接；删除操作也会显示结点从链表脱离并最终释放。</p>
         </div>
       </div>
-      <div id="pointer-graph" class="pointer-graph" aria-label="链表指针关系图">
-        <div class="pointer-empty">等待运行…</div>
-      </div>
+      <div id="pointer-graph" class="pointer-graph" aria-label="链表指针关系图"><div class="pointer-empty">等待运行…</div></div>
       <pre id="pointer-output" class="pointer-raw">等待运行…</pre>
     </section>
 
     <section class="timeline-card">
-      <div class="timeline-head">
-        <h2>运行时快照</h2>
-        <span id="snapshot-counter">0 / 0</span>
-      </div>
+      <div class="timeline-head"><h2>运行时快照</h2><span id="snapshot-counter">0 / 0</span></div>
       <div class="timeline-controls">
         <button id="prev-step" type="button" disabled>← 上一步</button>
         <button id="play-step" type="button" disabled>▶ 自动播放</button>
         <button id="next-step" type="button" disabled>下一步 →</button>
         <label>速度
-          <select id="play-speed">
-            <option value="1400">慢</option>
-            <option value="850" selected>中</option>
-            <option value="450">快</option>
-          </select>
+          <select id="play-speed"><option value="1400">慢</option><option value="850" selected>中</option><option value="450">快</option></select>
         </label>
       </div>
       <input id="snapshot-slider" type="range" min="0" max="0" value="0" disabled />
