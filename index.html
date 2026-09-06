@@ -11,22 +11,22 @@
     <div>
       <div class="eyebrow">DS · FIVE-VIEW LAB</div>
       <h1>数据结构五维教学实验室</h1>
-      <p>PSEUDO · C · STORAGE · POINTER · EXECUTION</p>
+      <p>ALGORITHM · SOURCE · MEMORY · STRUCTURE · EXECUTION</p>
     </div>
     <div id="backend-status" class="status">后端：检测中</div>
   </header>
 
   <main>
     <section class="notice">
-      <strong>GitHub Pages + Render + Clang + LLDB</strong>
-      <span>从单一演示扩展为可切换算法实验；所有实验仍由白名单 C 程序真实编译和源码级调试。</span>
+      <strong>v0.8 · Unified Snapshot + Renderer Architecture</strong>
+      <span>LLDB 负责真实运行状态；统一 Snapshot Model 将内存事实交给数组、链表、树、图等专用 Renderer。</span>
     </section>
 
     <section class="demo-toolbar">
       <div class="demo-copy">
-        <div class="eyebrow">LIVE DEMO · v0.7 MULTI-ALGORITHM</div>
+        <div class="eyebrow">LIVE DEMO · v0.8 RENDERER ARCHITECTURE</div>
         <h2 id="demo-title">数据结构算法实验</h2>
-        <p id="demo-subtitle">选择一个算法，由 LLDB 驱动 C 行、栈、堆、指针图和执行阶段同步变化。</p>
+        <p id="demo-subtitle">选择一种数据结构算法，五个视图共享同一真实调试时间轴。</p>
       </div>
       <div class="demo-actions">
         <label class="demo-select-label">算法
@@ -39,21 +39,22 @@
     </section>
 
     <section class="views views-top">
-      <article><h2>PSEUDO</h2><pre id="pseudo-output">等待运行…</pre></article>
-      <article><h2>C</h2><p>Clang · -O0 · -g · LLDB source-line</p><pre id="c-output">后端白名单源码</pre></article>
-      <article><h2>STORAGE</h2><pre id="storage-output">等待运行…</pre></article>
+      <article><h2>ALGORITHM</h2><pre id="pseudo-output">等待运行…</pre></article>
+      <article><h2>SOURCE</h2><p>Clang · -O0 · -g · LLDB source-line</p><pre id="c-output">后端白名单源码</pre></article>
+      <article><h2>MEMORY</h2><pre id="storage-output">等待运行…</pre></article>
       <article><h2>EXECUTION</h2><pre id="execution-output">等待运行…</pre></article>
     </section>
 
     <section class="pointer-stage">
       <div class="pointer-stage-head">
         <div>
-          <div class="eyebrow">POINTER · LIVE MEMORY GRAPH</div>
-          <h2>指针关系动态图</h2>
-          <p>宽屏显示当前 head、临时指针、结点地址与 next 连接；删除操作也会显示结点从链表脱离并最终释放。</p>
+          <div id="structure-eyebrow" class="eyebrow">STRUCTURE · SEMANTIC RENDERER</div>
+          <h2 id="structure-title">数据结构语义视图</h2>
+          <p id="structure-description">根据当前算法自动选择最合适的结构可视化，而不是把所有数据结构都画成链表。</p>
         </div>
+        <div id="renderer-badge" class="renderer-badge">renderer: waiting</div>
       </div>
-      <div id="pointer-graph" class="pointer-graph" aria-label="链表指针关系图"><div class="pointer-empty">等待运行…</div></div>
+      <div id="pointer-graph" class="pointer-graph" aria-label="数据结构语义图"><div class="pointer-empty">等待运行…</div></div>
       <pre id="pointer-output" class="pointer-raw">等待运行…</pre>
     </section>
 
