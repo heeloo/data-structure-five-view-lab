@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: data-structure-five-view-lab-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    autoDeploy: true
