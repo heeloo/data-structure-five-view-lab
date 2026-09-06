@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-APP_VERSION = "0.6.0"
+APP_VERSION = "0.7.0"
 app = FastAPI(title="Data Structure Five-View Lab API", version=APP_VERSION)
 
 app.add_middleware(
