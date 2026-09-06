@@ -1,16 +1,14 @@
-const BACKEND_URL = window.FIVE_VIEW_BACKEND_URL || "";
+const BACKEND_URL = window.FIVE_VIEW_BACKEND_URL || "https://data-structure-five-view-lab.onrender.com";
 const el = document.getElementById("backend-status");
 
 async function checkBackend() {
-  if (!BACKEND_URL) {
-    el.textContent = "后端：等待 Render URL";
-    return;
-  }
   try {
     const r = await fetch(`${BACKEND_URL.replace(/\/$/, "")}/health`, { cache: "no-store" });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    el.textContent = "后端：已连接";
+    const data = await r.json().catch(() => ({}));
+    el.textContent = data.status ? `后端：已连接（${data.status}）` : "后端：已连接";
   } catch (e) {
+    console.error("Backend health check failed:", e);
     el.textContent = "后端：连接失败";
   }
 }
