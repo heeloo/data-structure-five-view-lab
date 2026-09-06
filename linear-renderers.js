@@ -65,12 +65,12 @@
     const rear = Number(values.rear);
     const size = Number(values.size);
     const capacity = Number(values.capacity || cells.length);
-    const cx = 400, cy = 210, radius = 132, cellW = 104, cellH = 72;
+    const cx = 400, cy = 220, radius = 132, cellW = 104, cellH = 72;
     const points = new Map();
     const parts = [
       '<svg class="queue-ring" viewBox="0 0 800 440" role="img" aria-label="循环队列环形缓冲区">',
       '<defs><marker id="queue-front-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="queue-front-head"/></marker><marker id="queue-rear-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="queue-rear-head"/></marker></defs>',
-      '<circle class="queue-orbit" cx="400" cy="210" r="132"/>',
+      '<circle class="queue-orbit" cx="400" cy="220" r="132"/>',
     ];
 
     cells.forEach((cell, order) => {
@@ -103,13 +103,13 @@
       parts.push(`<line x1="${labelX}" y1="${labelY}" x2="${endX}" y2="${endY}" class="queue-pointer-line ${cssClass}" marker-end="url(#${marker})"/>`);
     }
 
-    addPointer("front", front, 213, "queue-front-arrow", "front");
-    addPointer("rear", rear, 239, "queue-rear-arrow", "rear");
+    addPointer("front", front, 190, "queue-front-arrow", "front");
+    addPointer("rear", rear, 205, "queue-rear-arrow", "rear");
     parts.push(`
-      <text x="400" y="184" text-anchor="middle" class="queue-center-title">CIRCULAR QUEUE</text>
-      <text x="400" y="211" text-anchor="middle" class="queue-center-value">size ${size} / ${capacity}</text>
-      <text x="400" y="237" text-anchor="middle" class="queue-center-note">rear 指向下一次入队位置</text>
-      ${rear === 0 ? '<text x="400" y="263" text-anchor="middle" class="queue-wrap-note">↻ rear 已回绕到下标 0</text>' : ""}
+      <text x="400" y="194" text-anchor="middle" class="queue-center-title">CIRCULAR QUEUE</text>
+      <text x="400" y="221" text-anchor="middle" class="queue-center-value">size ${size} / ${capacity}</text>
+      <text x="400" y="247" text-anchor="middle" class="queue-center-note">rear 指向下一次入队位置</text>
+      ${rear === 0 ? '<text x="400" y="273" text-anchor="middle" class="queue-wrap-note">↻ rear 已回绕到下标 0</text>' : ""}
       <text x="28" y="420" class="queue-footer">enqueue=${escapeHtml(values.value ?? "—")} · dequeued=${Number(values.removed) < 0 ? "—" : escapeHtml(values.removed)}</text>
     </svg>`);
     structureGraphEl.innerHTML = parts.join("");
