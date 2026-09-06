@@ -31,7 +31,7 @@
       <button id="run-demo" type="button">运行真实 C 演示</button>
     </section>
 
-    <section class="views">
+    <section class="views views-top">
       <article>
         <h2>PSEUDO</h2>
         <pre id="pseudo-output">等待运行…</pre>
@@ -45,17 +45,24 @@
         <h2>STORAGE</h2>
         <pre id="storage-output">等待运行…</pre>
       </article>
-      <article class="pointer-card">
-        <h2>POINTER</h2>
-        <div id="pointer-graph" class="pointer-graph" aria-label="链表指针关系图">
-          <div class="pointer-empty">等待运行…</div>
-        </div>
-        <pre id="pointer-output" class="pointer-raw">等待运行…</pre>
-      </article>
       <article>
         <h2>EXECUTION</h2>
         <pre id="execution-output">等待运行…</pre>
       </article>
+    </section>
+
+    <section class="pointer-stage">
+      <div class="pointer-stage-head">
+        <div>
+          <div class="eyebrow">POINTER · LIVE MEMORY GRAPH</div>
+          <h2>指针关系动态图</h2>
+          <p>独立宽屏窗格显示 head、s、结点地址与 next 连接，避免在五列布局中被压缩。</p>
+        </div>
+      </div>
+      <div id="pointer-graph" class="pointer-graph" aria-label="链表指针关系图">
+        <div class="pointer-empty">等待运行…</div>
+      </div>
+      <pre id="pointer-output" class="pointer-raw">等待运行…</pre>
     </section>
 
     <section class="timeline-card">
