@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import resource
 import subprocess
 import tempfile
@@ -12,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-APP_VERSION = "0.9.0"
+APP_VERSION = "1.0.0"
 app = FastAPI(title="Data Structure Five-View Lab API", version=APP_VERSION)
 
 app.add_middleware(
@@ -224,12 +225,69 @@ QUEUE_DISPLAY = """int main(void) {
 }
 """
 
+TREE_SOURCE = r'''#include <stdio.h>
+#include <stdlib.h>
+typedef struct Node { int data; struct Node *left,*right; } Node;
+static Node *make_node(int value){Node *n=(Node*)malloc(sizeof(Node));if(!n)exit(2);n->data=value;n->left=n->right=NULL;return n;}
+static int contains(Node *root,Node *needle){return root&&(root==needle||contains(root->left,needle)||contains(root->right,needle));}
+static void print_node(Node *n,int *first){if(!n)return;if(!*first)printf(",");*first=0;printf("{\"address\":\"%p\",\"data\":%d,\"left\":\"%p\",\"right\":\"%p\",\"detached\":false}",(void*)n,n->data,(void*)n->left,(void*)n->right);print_node(n->left,first);print_node(n->right,first);}
+__attribute__((noinline)) static void snap(const char *step,Node *root,Node *current,Node *new_node,int target,int depth,int direction){
+    printf("SNAPSHOT:{\"step\":\"%s\",\"values\":{\"root\":\"%p\",\"current\":\"%p\",\"new_node\":\"%p\",\"target\":%d,\"depth\":%d,\"direction\":%d},\"tree\":[",step,(void*)root,(void*)current,(void*)new_node,target,depth,direction);
+    int first=1;print_node(root,&first);if(new_node&&!contains(root,new_node)){if(!first)printf(",");printf("{\"address\":\"%p\",\"data\":%d,\"left\":\"%p\",\"right\":\"%p\",\"detached\":true}",(void*)new_node,new_node->data,(void*)new_node->left,(void*)new_node->right);}
+    printf("]}\n");
+}
+__attribute__((noinline)) static Node *bst_insert(Node *current,int target,Node *root,Node **new_node,int depth){
+    int direction=0;
+    if(current==NULL){*new_node=make_node(target);snap("到达 NULL：分配新结点 60",root,current,*new_node,target,depth,direction); /* TRACE_STAGE_4 */ return *new_node;}
+    direction=target<current->data?-1:1;
+    if(depth==0){snap("访问根结点 50：60 > 50，进入右子树",root,current,*new_node,target,depth,direction); /* TRACE_STAGE_2 */}
+    else{snap("访问结点 70：60 < 70，进入左子树",root,current,*new_node,target,depth,direction); /* TRACE_STAGE_3 */}
+    if(direction<0){current->left=bst_insert(current->left,target,root,new_node,depth+1);if(depth==1){snap("递归回溯：70->left 指向新结点 60",root,current,*new_node,target,depth,direction); /* TRACE_STAGE_5 */}}
+    else current->right=bst_insert(current->right,target,root,new_node,depth+1);
+    return current;
+}
+static void free_tree(Node *n){if(!n)return;free_tree(n->left);free_tree(n->right);free(n);}
+int main(void){
+    setvbuf(stdout,NULL,_IONBF,0);Node *root=make_node(50),*current=NULL,*new_node=NULL;int target=60,depth=0,direction=0;
+    root->left=make_node(30);root->right=make_node(70);current=root;snap("原始二叉搜索树：30, 50, 70",root,current,new_node,target,depth,direction); /* TRACE_STAGE_1 */
+    root=bst_insert(root,target,root,&new_node,0);current=new_node;depth=2;snap("插入完成：中序序列为 30, 50, 60, 70",root,current,new_node,target,depth,direction); /* TRACE_STAGE_6 */
+    printf("PROGRAM_STDOUT:inorder=30 50 60 70 root=%d inserted=%d\n",root->data,new_node->data);free_tree(root);return 0;
+}
+'''
+
+TREE_DISPLAY = """typedef struct Node {
+    int data;
+    struct Node *left, *right;
+} Node;
+
+Node *bst_insert(Node *current, int target) {
+    if (current == NULL)
+        return make_node(target);
+
+    if (target < current->data)
+        current->left = bst_insert(current->left, target);
+    else
+        current->right = bst_insert(current->right, target);
+
+    return current;
+}
+
+int main(void) {
+    Node *root = make_node(50);
+    root->left = make_node(30);
+    root->right = make_node(70);
+
+    root = bst_insert(root, 60);
+}
+"""
+
 DEMOS = {
     "linked-list-insert": {"title":"单链表：头插一个新结点","subtitle":"节点与指针关系视图","category":"linked-list","renderer":"singly-linked-list","pseudo":["1. 建立原链表 head -> a","2. 申请新结点 s","3. s->next = head","4. head = s"],"display_source":INSERT_DISPLAY,"source":INSERT_SOURCE,"display_stage_lines":[14,18,20,21],"display_stage_text":["head = a;","s->next = NULL;","s->next = head;","head = s;"],"frame_vars":["head","a","s"],"pointer_names":["head","a","s"]},
     "linked-list-delete-head": {"title":"单链表：删除首元结点","subtitle":"脱链与 free 分开显示","category":"linked-list","renderer":"singly-linked-list","pseudo":["1. 原链表 head -> a -> b","2. p = head 保存待删除结点","3. head = head->next 越过 a","4. free(p) 释放原首结点"],"display_source":DELETE_DISPLAY,"source":DELETE_SOURCE,"display_stage_lines":[16,17,18,19],"display_stage_text":["p = head;","head = head->next;","free(p);","p = NULL;"],"frame_vars":["head","a","b","p"],"pointer_names":["head","a","b","p"]},
     "sequence-list-insert": {"title":"顺序表：指定位置插入","subtitle":"连续内存格、下标与元素搬移视图","category":"array","renderer":"array","pseudo":["1. 原数组 [10,20,30,40]，在下标 2 插入 99","2. 从尾部开始向右搬移 arr[3]","3. 继续搬移 arr[2]","4. arr[2] = 99，length++"],"display_source":ARRAY_DISPLAY,"source":ARRAY_SOURCE,"display_stage_lines":[7,8,10,12],"display_stage_text":["int i = 4;","arr[4] = arr[3];","arr[3] = arr[2];","arr[2] = value;"],"frame_vars":["arr","length","capacity","pos","value","i"],"pointer_names":[]},
     "stack-push-pop": {"title":"顺序栈：push 与 pop","subtitle":"栈顶移动、有效区间与残留内存值同步显示","category":"stack","renderer":"stack","pseudo":["1. 原栈自底向上为 [10, 20]","2. top++，为新元素预留栈顶位置","3. data[top] = 30，push 完成","4. popped = data[top]，读取栈顶","5. top--，pop 完成（物理槽位仍保留 30）"],"display_source":STACK_DISPLAY,"source":STACK_SOURCE,"display_stage_lines":[3,8,9,12,13],"display_stage_text":["int top = 1;","top++;","data[top] = value;","popped = data[top];","top--;"],"frame_vars":["data","top","capacity","value","popped"],"pointer_names":[]},
     "circular-queue-enqueue-dequeue": {"title":"循环队列：enqueue 与 dequeue","subtitle":"队首、队尾、有效元素与 rear 回绕同步显示","category":"queue","renderer":"circular-queue","pseudo":["1. 原队列 front=2、rear=4，逻辑内容 [20, 30]","2. queue[rear] = 40，写入待入队元素","3. rear = (rear + 1) % capacity，回绕到 0","4. removed = queue[front]，读取队首 20","5. front 前移且 size--，dequeue 完成"],"display_source":QUEUE_DISPLAY,"source":QUEUE_SOURCE,"display_stage_lines":[3,10,11,15,16],"display_stage_text":["int front = 2;","queue[rear] = value;","rear = (rear + 1) % 5;","removed = queue[front];","front = (front + 1) % 5;"],"frame_vars":["queue","front","rear","size","capacity","value","removed"],"pointer_names":[]},
+    "bst-insert": {"title":"二叉搜索树：递归插入 60","subtitle":"树形拓扑、比较方向与真实 LLDB 递归调用栈同步显示","category":"tree","renderer":"binary-tree","pseudo":["1. 建立二叉搜索树：根 50，左 30，右 70","2. 比较 60 > 50，递归进入右子树","3. 比较 60 < 70，递归进入左子树","4. 到达 NULL，分配结点 60","5. 递归回溯，将 70->left 指向 60","6. 插入完成，中序序列为 30, 50, 60, 70"],"display_source":TREE_DISPLAY,"source":TREE_SOURCE,"display_stage_lines":[21,13,11,8,11,23],"display_stage_text":["root->right = make_node(70);","current->right = bst_insert(...);","current->left = bst_insert(...);","return make_node(target);","current->left = bst_insert(...);","root = bst_insert(root, 60);"],"frame_vars":["root","current","new_node","target","depth","direction"],"pointer_names":["root","current","new_node"],"breakpoint_mode":"snap-caller"},
 }
 
 LLDB_PROBE_SOURCE = r'''#include <stdio.h>
@@ -280,16 +338,28 @@ def _extract_frame_blocks(text:str)->list[str]:
     return [part.split("FIVEVIEW_FRAME_END",1)[0].strip() for part in text.split("FIVEVIEW_FRAME_BEGIN")[1:] if "FIVEVIEW_FRAME_END" in part]
 
 
+def _extract_call_stack(block:str)->list[dict]:
+    frames={}
+    for line in block.splitlines():
+        match=re.search(r"frame #(\d+):.*?`([A-Za-z_][A-Za-z0-9_]*)",line)
+        if match:frames[int(match.group(1))]=match.group(2)
+    return [{"index":index,"function":frames[index]} for index in sorted(frames)]
+
+
 def _run_demo_lldb(exe:Path,td:str,demo:dict)->dict:
     trace_lines=_trace_lines(demo["source"]);count=len(trace_lines);vars_=demo["frame_vars"]
-    commands=[f"breakpoint set --file demo.c --line {line}" for line in trace_lines]+["run"]
-    for _ in range(count):commands += ["script print('FIVEVIEW_FRAME_BEGIN')","frame info",f"frame variable {' '.join(vars_)}","bt 3","script print('FIVEVIEW_FRAME_END')","continue"]
+    caller_mode=demo.get("breakpoint_mode")=="snap-caller"
+    commands=(["breakpoint set --name snap"] if caller_mode else [f"breakpoint set --file demo.c --line {line}" for line in trace_lines])+["run"]
+    for _ in range(count):
+        commands += ["script print('FIVEVIEW_FRAME_BEGIN')"]
+        if caller_mode:commands += ["frame select 1"]
+        commands += ["frame info",f"frame variable {' '.join(vars_)}","bt 8" if caller_mode else "bt 3","script print('FIVEVIEW_FRAME_END')","continue"]
     argv=["lldb","--batch"]
     for cmd in commands:argv.extend(["-o",cmd])
     argv.append(str(exe));dbg=subprocess.run(argv,cwd=td,capture_output=True,text=True,timeout=18,env={"PATH":os.environ.get("PATH","/usr/bin:/bin")})
     combined=f"{dbg.stdout}\n{dbg.stderr}";snapshots,program_stdout=_parse_program_output(combined);blocks=_extract_frame_blocks(combined);hits=min(count,len(snapshots),len(blocks))
     for i,snap in enumerate(snapshots[:count]):
-        block=blocks[i] if i<len(blocks) else "";snap["debugger"]={"engine":"lldb","breakpoint_hit":i+1,"compiled_source_line":trace_lines[i],"display_source_line":demo["display_stage_lines"][i],"display_source_text":demo["display_stage_text"][i],"frame_variables_read":all(name in block for name in vars_),"frame_excerpt":block[-1800:]}
+        block=blocks[i] if i<len(blocks) else "";snap["debugger"]={"engine":"lldb","breakpoint_hit":i+1,"compiled_source_line":trace_lines[i],"display_source_line":demo["display_stage_lines"][i],"display_source_text":demo["display_stage_text"][i],"frame_variables_read":all(name in block for name in vars_),"call_stack":_extract_call_stack(block),"frame_excerpt":block[-2400:]}
     return {"success":dbg.returncode==0 and hits>=count and len(snapshots)==count and len(blocks)>=count,"snapshots":snapshots,"stdout":program_stdout,"breakpoint_hits":hits,"frame_reads":len(blocks),"trace":combined[-9000:]}
 
 
@@ -322,6 +392,17 @@ def _normalize_snapshot(raw:dict,demo:dict)->dict:
         for name in ("front","rear"):
             index=values.get(name)
             if isinstance(index,int):relations.append({"from":name,"to":f"queue-cell-{index}","kind":"index-pointer"})
+    elif renderer=="binary-tree":
+        values=raw.get("values",{});nodes=raw.get("tree",[]);by_addr={str(n.get("address")):n for n in nodes}
+        for name,value in values.items():variables.append({"name":name,"type":"Node *" if name in {"root","current","new_node"} else "int","value":value,"kind":"pointer" if name in {"root","current","new_node"} else "scalar"})
+        for node in nodes:
+            address=str(node.get("address"));objects.append({"id":address,"type":"Node","address":address,"label":str(node.get("data")),"fields":{"data":node.get("data"),"left":node.get("left"),"right":node.get("right"),"detached":node.get("detached",False)}})
+            for field in ("left","right"):
+                child=str(node.get(field))
+                if child in by_addr:relations.append({"from":address,"field":field,"to":child,"kind":"tree-edge"})
+        for name in demo.get("pointer_names",[]):
+            value=str(values.get(name))
+            if value in by_addr:relations.append({"from":name,"to":value,"kind":"variable-pointer"})
     raw["model"]={"schema":"five-view.snapshot.v1","variables":variables,"objects":objects,"relations":relations,"execution":raw.get("debugger",{}),"visualization":{"renderer":renderer,"category":demo["category"]}}
     return raw
 
