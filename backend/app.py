@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 app = FastAPI(title="Data Structure Five-View Lab API", version=APP_VERSION)
 
 app.add_middleware(
@@ -151,6 +151,33 @@ ARRAY_DISPLAY = """int main(void) {
     i = 2;
     arr[2] = value;
     length = 5;
+}
+"""
+
+ARRAY_APPEND_SOURCE = r'''#include <stdio.h>
+__attribute__((noinline)) static void snap(const char *step,int *arr,int length,int capacity,int pos,int value,int i){
+    printf("SNAPSHOT:{\"step\":\"%s\",\"values\":{\"length\":%d,\"capacity\":%d,\"pos\":%d,\"value\":%d,\"i\":%d},\"array\":[",step,length,capacity,pos,value,i);
+    for(int k=0;k<capacity;k++){if(k)printf(",");printf("{\"index\":%d,\"address\":\"%p\",\"value\":%d,\"active\":%s}",k,(void*)&arr[k],arr[k],k<length?"true":"false");}
+    printf("]}\n");
+}
+int main(void){
+    setvbuf(stdout,NULL,_IONBF,0);int arr[6]={10,20,30,40,0,0};int length=4,capacity=6,pos=length,value=50,i=pos;
+    snap("尾插前：表尾空闲位置为 arr[length]",arr,length,capacity,pos,value,i); /* TRACE_STAGE_1 */
+    arr[pos]=value; snap("写入 arr[length] = 50",arr,length,capacity,pos,value,i); /* TRACE_STAGE_2 */
+    length++; snap("length++，尾插完成",arr,length,capacity,pos,value,i); /* TRACE_STAGE_3 */
+    printf("PROGRAM_STDOUT:10 20 30 40 50\n");return 0;
+}
+'''
+
+ARRAY_APPEND_DISPLAY = """int main(void) {
+    int arr[6] = {10, 20, 30, 40, 0, 0};
+    int length = 4;
+    int capacity = 6;
+    int pos = length;
+    int value = 50;
+
+    arr[pos] = value;
+    length++;
 }
 """
 
@@ -377,13 +404,29 @@ int main(void) {
 DEMOS = {
     "linked-list-insert": {"title":"单链表：头插一个新结点","subtitle":"节点与指针关系视图","category":"linked-list","renderer":"singly-linked-list","pseudo":["1. 建立原链表 head -> a","2. 申请新结点 s","3. s->next = head","4. head = s"],"display_source":INSERT_DISPLAY,"source":INSERT_SOURCE,"display_stage_lines":[14,18,20,21],"display_stage_text":["head = a;","s->next = NULL;","s->next = head;","head = s;"],"frame_vars":["head","a","s"],"pointer_names":["head","a","s"]},
     "linked-list-delete-head": {"title":"单链表：删除首元结点","subtitle":"脱链与 free 分开显示","category":"linked-list","renderer":"singly-linked-list","pseudo":["1. 原链表 head -> a -> b","2. p = head 保存待删除结点","3. head = head->next 越过 a","4. free(p) 释放原首结点"],"display_source":DELETE_DISPLAY,"source":DELETE_SOURCE,"display_stage_lines":[16,17,18,19],"display_stage_text":["p = head;","head = head->next;","free(p);","p = NULL;"],"frame_vars":["head","a","b","p"],"pointer_names":["head","a","b","p"]},
-    "sequence-list-insert": {"title":"顺序表：指定位置插入","subtitle":"连续内存格、下标与元素搬移视图","category":"array","renderer":"array","pseudo":["1. 原数组 [10,20,30,40]，在下标 2 插入 99","2. 从尾部开始向右搬移 arr[3]","3. 继续搬移 arr[2]","4. arr[2] = 99，length++"],"display_source":ARRAY_DISPLAY,"source":ARRAY_SOURCE,"display_stage_lines":[7,8,10,12],"display_stage_text":["int i = 4;","arr[4] = arr[3];","arr[3] = arr[2];","arr[2] = value;"],"frame_vars":["arr","length","capacity","pos","value","i"],"pointer_names":[]},
+    "sequence-list-insert": {"title":"顺序表：指定位置插入（中间插入）","subtitle":"下标 2 插入；从后向前搬移元素，并非尾插法","category":"array","renderer":"array","pseudo":["1. 原数组 [10,20,30,40]，在下标 2 插入 99","2. 从尾部开始向右搬移 arr[3]","3. 继续搬移 arr[2]","4. arr[2] = 99，length++"],"display_source":ARRAY_DISPLAY,"source":ARRAY_SOURCE,"display_stage_lines":[7,8,10,12],"display_stage_text":["int i = 4;","arr[4] = arr[3];","arr[3] = arr[2];","arr[2] = value;"],"frame_vars":["arr","length","capacity","pos","value","i"],"pointer_names":[]},
+    "sequence-list-append": {"title":"顺序表：尾插法（append）","subtitle":"在下标 length 直接写入；容量充足时无需搬移元素","category":"array","renderer":"array","pseudo":["1. 检查 length < capacity，确认表尾有空闲容量","2. pos = length，定位第一个空闲槽位","3. arr[pos] = 50，写入表尾","4. length++，新元素纳入有效区间"],"display_source":ARRAY_APPEND_DISPLAY,"source":ARRAY_APPEND_SOURCE,"display_stage_lines":[5,8,9],"display_stage_text":["int pos = length;","arr[pos] = value;","length++;"],"frame_vars":["arr","length","capacity","pos","value","i"],"pointer_names":[]},
     "stack-push-pop": {"title":"顺序栈：push 与 pop","subtitle":"栈顶移动、有效区间与残留内存值同步显示","category":"stack","renderer":"stack","pseudo":["1. 原栈自底向上为 [10, 20]","2. top++，为新元素预留栈顶位置","3. data[top] = 30，push 完成","4. popped = data[top]，读取栈顶","5. top--，pop 完成（物理槽位仍保留 30）"],"display_source":STACK_DISPLAY,"source":STACK_SOURCE,"display_stage_lines":[3,8,9,12,13],"display_stage_text":["int top = 1;","top++;","data[top] = value;","popped = data[top];","top--;"],"frame_vars":["data","top","capacity","value","popped"],"pointer_names":[]},
     "circular-queue-enqueue-dequeue": {"title":"循环队列：enqueue 与 dequeue","subtitle":"队首、队尾、有效元素与 rear 回绕同步显示","category":"queue","renderer":"circular-queue","pseudo":["1. 原队列 front=2、rear=4，逻辑内容 [20, 30]","2. queue[rear] = 40，写入待入队元素","3. rear = (rear + 1) % capacity，回绕到 0","4. removed = queue[front]，读取队首 20","5. front 前移且 size--，dequeue 完成"],"display_source":QUEUE_DISPLAY,"source":QUEUE_SOURCE,"display_stage_lines":[3,10,11,15,16],"display_stage_text":["int front = 2;","queue[rear] = value;","rear = (rear + 1) % 5;","removed = queue[front];","front = (front + 1) % 5;"],"frame_vars":["queue","front","rear","size","capacity","value","removed"],"pointer_names":[]},
     "bst-insert": {"title":"二叉搜索树：递归插入 60","subtitle":"树形拓扑、比较方向与真实 LLDB 递归调用栈同步显示","category":"tree","renderer":"binary-tree","pseudo":["1. 建立二叉搜索树：根 50，左 30，右 70","2. 比较 60 > 50，递归进入右子树","3. 比较 60 < 70，递归进入左子树","4. 到达 NULL，分配结点 60","5. 递归回溯，将 70->left 指向 60","6. 插入完成，中序序列为 30, 50, 60, 70"],"display_source":TREE_DISPLAY,"source":TREE_SOURCE,"display_stage_lines":[21,13,11,8,11,23],"display_stage_text":["root->right = make_node(70);","current->right = bst_insert(...);","current->left = bst_insert(...);","return make_node(target);","current->left = bst_insert(...);","root = bst_insert(root, 60);"],"frame_vars":["root","current","new_node","target","depth","direction"],"pointer_names":["root","current","new_node"],"breakpoint_mode":"snap-caller"},
     "graph-bfs": {"title":"图：广度优先搜索 BFS","subtitle":"结点状态、生成树边与真实循环队列同步显示","category":"graph","renderer":"graph","graph_mode":"bfs","pseudo":["1. A 入队，标记为 frontier","2. A 出队并标记 visited","3. 扫描 A，发现 B、C 并入队","4. B 出队，发现 D、E 并入队","5. C 出队，相邻结点均已发现","6. 继续处理 D、E，BFS 完成"],"display_source":BFS_DISPLAY,"source":BFS_SOURCE,"display_stage_lines":[3,6,11,15,11,5],"display_stage_text":["queue[rear++] = start;","current = queue[front++];","扫描 A 的相邻结点","queue[rear++] = next;","扫描 C 的相邻结点","while (front < rear)"],"frame_vars":["state","parent","distance","queue","front","rear","current","order","order_len"],"pointer_names":[],"breakpoint_mode":"snap-caller"},
     "graph-dfs": {"title":"图：深度优先搜索 DFS","subtitle":"活动结点、完成结点与真实 LLDB 递归栈同步显示","category":"graph","renderer":"graph","graph_mode":"dfs","pseudo":["1. 初始化：所有结点均为 unseen","2. 进入 A，压入递归栈","3. 从 A 进入 B","4. 从 B 进入 D","5. 回溯后从 B 进入 E","6. 从 E 进入 C","7. 全部递归返回，DFS 完成"],"display_source":DFS_DISPLAY,"source":DFS_SOURCE,"display_stage_lines":[18,2,9,9,9,9,13],"display_stage_text":["dfs(A, 0);","state[current] = ACTIVE;","dfs(next, depth + 1);","dfs(next, depth + 1);","dfs(next, depth + 1);","dfs(next, depth + 1);","state[current] = FINISHED;"],"frame_vars":["current","depth","state","parent","metric","stack","stack_size","order","order_len"],"pointer_names":[],"breakpoint_mode":"snap-caller"},
 }
+
+DEMO_DETAILS = {
+    "linked-list-insert": {"method":"头插法","position":"链表表头","storage":"动态单链表（堆结点 + next 指针）","initial":"10 → NULL","result":"20 → 10 → NULL","time":"O(1)","space":"O(1)，另分配 1 个新结点","precondition":"内存分配成功","key":"先令 s->next = head，再修改 head，避免原链表丢失"},
+    "linked-list-delete-head": {"method":"删除首元结点","position":"链表表头","storage":"动态单链表（堆结点 + next 指针）","initial":"10 → 20 → NULL","result":"20 → NULL","time":"O(1)","space":"O(1)","precondition":"head != NULL","key":"先保存待删结点，再移动 head，最后 free 原结点"},
+    "sequence-list-insert": {"method":"指定位置插入（中间插入，非尾插）","position":"下标 pos = 2","storage":"顺序存储（连续数组）","initial":"[10, 20, 30, 40]，length=4","result":"[10, 20, 99, 30, 40]，length=5","time":"O(n)","space":"O(1)","precondition":"0 ≤ pos ≤ length 且 length < capacity","key":"必须从后向前搬移 [pos, length-1]，否则会覆盖尚未复制的元素"},
+    "sequence-list-append": {"method":"尾插法（append）","position":"表尾 pos = length = 4","storage":"顺序存储（连续数组）","initial":"[10, 20, 30, 40]，length=4","result":"[10, 20, 30, 40, 50]，length=5","time":"O(1)（本演示容量充足）","space":"O(1)","precondition":"length < capacity；若容量不足需先扩容","key":"写入 arr[length] 后再执行 length++，不需要搬移已有元素"},
+    "stack-push-pop": {"method":"顺序栈入栈 + 出栈","position":"仅操作栈顶 top","storage":"顺序栈（连续数组，LIFO）","initial":"栈底 [10, 20] 栈顶","result":"push 30 后再 pop，逻辑栈恢复为 [10, 20]","time":"push O(1)，pop O(1)","space":"O(1)","precondition":"push 前栈未满；pop 前栈非空","key":"top 决定逻辑有效区；pop 后槽位中的 30 只是物理残留"},
+    "circular-queue-enqueue-dequeue": {"method":"循环队列入队 + 出队","position":"rear 写入，front 读取","storage":"循环数组（FIFO）","initial":"front=2，rear=4，逻辑队列 [20, 30]","result":"入队 40、出队 20，得到 [30, 40]","time":"enqueue O(1)，dequeue O(1)","space":"O(1)","precondition":"入队前队列未满；出队前队列非空","key":"索引用 (index + 1) % capacity 回绕；物理下标不等于逻辑顺序"},
+    "bst-insert": {"method":"二叉搜索树递归插入","position":"按比较结果定位叶子空位","storage":"链式二叉树（堆结点）","initial":"根 50，左 30，右 70","result":"60 成为 70 的左孩子","time":"平均 O(log n)，最坏 O(n)","space":"递归栈平均 O(log n)，最坏 O(n)","precondition":"满足 BST：左子树 < 根 < 右子树","key":"比较决定递归方向；返回时把新子树根重新连接给父结点"},
+    "graph-bfs": {"method":"广度优先搜索（BFS）","position":"从顶点 A 开始，按层扩展","storage":"邻接矩阵 + 循环队列","initial":"5 个顶点均为 unseen","result":"访问序列 A → B → C → D → E","time":"邻接矩阵 O(V²)","space":"O(V)","precondition":"发现顶点时立即标记 frontier，避免重复入队","key":"FIFO 队列保证按距离层次访问；parent 边组成 BFS 生成树"},
+    "graph-dfs": {"method":"深度优先搜索（DFS）","position":"从顶点 A 开始，递归深入","storage":"邻接矩阵 + 递归调用栈","initial":"5 个顶点均为 unseen","result":"先序访问 A → B → D → E → C","time":"邻接矩阵 O(V²)","space":"O(V)","precondition":"进入顶点时标记 active，返回前标记 finished","key":"LIFO 递归栈记录当前搜索路径；回溯后继续扫描未访问邻接点"},
+}
+
+for _demo_id, _details in DEMO_DETAILS.items():
+    DEMOS[_demo_id]["details"] = _details
 
 LLDB_PROBE_SOURCE = r'''#include <stdio.h>
 __attribute__((noinline)) static int probe(int x){volatile int y=x+1;return y;}
@@ -528,7 +571,7 @@ def _run_demo(demo_id:str)->dict:
             for i,snap in enumerate(snapshots[:count]):snap["debugger"]={"engine":"instrumentation-fallback","display_source_line":demo["display_stage_lines"][i],"display_source_text":demo["display_stage_text"][i]}
             engine,fallback="instrumentation-fallback",True
         snapshots=[_normalize_snapshot(s,demo) for s in snapshots]
-        return {"demo_id":demo_id,"title":demo["title"],"subtitle":demo["subtitle"],"category":demo["category"],"renderer":demo["renderer"],"graph_mode":demo.get("graph_mode"),"pseudo":demo["pseudo"],"display_source":demo["display_source"],"pointer_names":demo.get("pointer_names",[]),"snapshot_schema":"five-view.snapshot.v1","compiler":"clang","debug_build":True,"execution_engine":engine,"lldb_breakpoint_hits":lr["breakpoint_hits"],"lldb_frame_reads":lr["frame_reads"],"lldb_fallback":fallback,"timeline_mode":"source-line","storage_semantics":"LLDB 负责真实源码断点与局部变量读取；结构化快照归一化为统一 snapshot model，再由数据结构专用 Renderer 解释。","address_note":"地址来自本次 Render 容器中的真实 C 调试进程；ASLR 会使不同运行地址变化。","snapshots":snapshots,"stdout":program_stdout}
+        return {"demo_id":demo_id,"title":demo["title"],"subtitle":demo["subtitle"],"details":demo.get("details",{}),"category":demo["category"],"renderer":demo["renderer"],"graph_mode":demo.get("graph_mode"),"pseudo":demo["pseudo"],"display_source":demo["display_source"],"pointer_names":demo.get("pointer_names",[]),"snapshot_schema":"five-view.snapshot.v1","compiler":"clang","debug_build":True,"execution_engine":engine,"lldb_breakpoint_hits":lr["breakpoint_hits"],"lldb_frame_reads":lr["frame_reads"],"lldb_fallback":fallback,"timeline_mode":"source-line","storage_semantics":"LLDB 负责真实源码断点与局部变量读取；结构化快照归一化为统一 snapshot model，再由数据结构专用 Renderer 解释。","address_note":"地址来自本次 Render 容器中的真实 C 调试进程；ASLR 会使不同运行地址变化。","snapshots":snapshots,"stdout":program_stdout}
 
 
 def _debugger_capability()->dict:
@@ -548,7 +591,7 @@ def root():return utf8_json({"service":"five-view-lab-backend","status":"ok","do
 @app.get("/health")
 def health():return utf8_json({"status":"ok","service":"five-view-lab-backend","version":APP_VERSION,"snapshot_schema":"five-view.snapshot.v1"})
 @app.get("/api/demos")
-def list_demos():return utf8_json([{"id":k,"title":v["title"],"subtitle":v["subtitle"],"category":v["category"],"renderer":v["renderer"]} for k,v in DEMOS.items()])
+def list_demos():return utf8_json([{"id":k,"title":v["title"],"subtitle":v["subtitle"],"details":v.get("details",{}),"category":v["category"],"renderer":v["renderer"]} for k,v in DEMOS.items()])
 @app.get("/api/debugger-capability")
 def debugger_capability():return utf8_json(_debugger_capability())
 @app.post("/api/run-demo")
