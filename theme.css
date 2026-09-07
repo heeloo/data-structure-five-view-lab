@@ -142,6 +142,14 @@
 :root[data-theme="light"] .graph-node.is-active circle { fill: #eee9ff; stroke: #7d64bd; }
 :root[data-theme="light"] .graph-node.is-visited circle,
 :root[data-theme="light"] .graph-node.is-finished circle { fill: #def5e9; stroke: #278862; }
+:root[data-theme="light"] .tree-swatch.red { border-color: #bd3147; background: #ffe1e6; }
+:root[data-theme="light"] .tree-swatch.black { border-color: #182b3b; background: #263b4d; }
+:root[data-theme="light"] .tree-node.is-red .tree-node-box { fill: #ffe1e6; stroke: #bd3147; }
+:root[data-theme="light"] .tree-node.is-red .tree-node-value { fill: #681626; }
+:root[data-theme="light"] .tree-node.is-black .tree-node-box { fill: #263b4d; stroke: #132331; }
+:root[data-theme="light"] .tree-node.is-black .tree-node-value { fill: #ffffff; }
+:root[data-theme="light"] .tree-node.is-current .tree-node-box { stroke: #bf7b00; }
+:root[data-theme="light"] .tree-node-meta { fill: #526b82; }
 :root[data-theme="light"] .graph-work-item,
 :root[data-theme="light"] .tree-frame.recursive,
 :root[data-theme="light"] .graph-frame.recursive { border-color: #9b88cd; background: #eee9ff; color: #45356e; }

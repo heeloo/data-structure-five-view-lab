@@ -17,6 +17,8 @@
 .tree-swatch.current { border-color: #f2cf75; background: rgba(242, 207, 117, .16); }
 .tree-swatch.fresh { border-color: #74e6b3; background: rgba(116, 230, 179, .16); }
 .tree-swatch.detached { border-color: #c0a7ff; border-style: dashed; }
+.tree-swatch.red { border-color: #ff7186; background: #661f2d; }
+.tree-swatch.black { border-color: #93a5b7; background: #080e15; }
 
 .pointer-graph svg.tree-canvas {
   width: 100%;
@@ -35,7 +37,12 @@
 .tree-node-value { fill: #f4f9ff; font: 800 23px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .tree-node-address { fill: #88bce8; font: 8px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .tree-node-badge { fill: #f2cf75; font: 800 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.tree-node-meta { fill: #9fb4cc; font: 800 9px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .05em; }
 .tree-node.is-new .tree-node-badge { fill: #74e6b3; }
+.tree-node.is-red .tree-node-box { fill: #581d2a; stroke: #ff7186; }
+.tree-node.is-black .tree-node-box { fill: #080e15; stroke: #93a5b7; }
+.tree-node.is-current .tree-node-box { stroke: #f2cf75; stroke-width: 4; }
+.tree-node.is-new .tree-node-box { stroke-width: 4; filter: drop-shadow(0 0 7px rgba(116, 230, 179, .28)); }
 .tree-detached-zone { fill: rgba(192, 167, 255, .05); stroke: #8c75c7; stroke-width: 1.5; stroke-dasharray: 6 5; }
 .tree-detached-label { fill: #c0a7ff; font: 10px ui-sans-serif, system-ui, sans-serif; }
 .tree-null-current { fill: #f2cf75; font: 800 12px ui-sans-serif, system-ui, sans-serif; }

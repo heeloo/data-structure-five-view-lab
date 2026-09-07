@@ -4,6 +4,7 @@
   function renderBinaryTree(snap) {
     const nodes = snap.tree || [];
     const values = snap.values || {};
+    const isRedBlack = runMeta.renderer === "red-black-tree" || nodes.some(node => node.color);
     if (!nodes.length) {
       structureGraphEl.innerHTML = '<div class="pointer-empty">没有树快照</div>';
       return;
@@ -33,7 +34,7 @@
     const detached = nodes.filter(node => !reachable.has(String(node.address)) || node.detached);
     detached.forEach((node, index) => positions.set(String(node.address), {x: 790 - index * 125, y: 352, depth: 3, detached: true}));
 
-    const svg = [`<svg class="tree-canvas" viewBox="0 0 ${width} 430" role="img" aria-label="二叉搜索树结构图">`,
+    const svg = [`<svg class="tree-canvas" viewBox="0 0 ${width} 430" role="img" aria-label="${isRedBlack ? "红黑树" : "二叉搜索树"}结构图">`,
       '<defs><marker id="tree-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="tree-arrow-head"/></marker></defs>'];
 
     for (const node of nodes) {
@@ -56,6 +57,8 @@
       if (address === currentAddress) classes.push("is-current");
       if (address === newAddress) classes.push("is-new");
       if (pos.detached || node.detached) classes.push("is-detached");
+      if (node.color === "red") classes.push("is-red");
+      if (node.color === "black") classes.push("is-black");
       const badges = [];
       if (address === currentAddress) badges.push("current");
       if (address === newAddress) badges.push("new_node");
@@ -65,6 +68,8 @@
       svg.push(`<rect class="tree-node-box" x="${pos.x - 52}" y="${pos.y - 34}" width="104" height="68" rx="15"/>`);
       svg.push(`<text class="tree-node-value" x="${pos.x}" y="${pos.y + 7}" text-anchor="middle">${escapeHtml(node.data)}</text>`);
       svg.push(`<text class="tree-node-address" x="${pos.x}" y="${pos.y + 26}" text-anchor="middle">${escapeHtml(shortAddress(address))}</text>`);
+      const metadata = [node.color ? node.color.toUpperCase() : "", Number.isFinite(Number(node.height)) ? `h=${node.height}` : "", Number.isFinite(Number(node.balance)) ? `bf=${node.balance}` : "", Number.isFinite(Number(node.priority)) ? `p=${node.priority}` : ""].filter(Boolean).join(" · ");
+      if (metadata) svg.push(`<text class="tree-node-meta" x="${pos.x}" y="${pos.y + 49}" text-anchor="middle">${escapeHtml(metadata)}</text>`);
       if (badges.length) svg.push(`<text class="tree-node-badge" x="${pos.x}" y="${pos.y - 46}" text-anchor="middle">${badges.join(" · ")}</text>`);
       if (pos.detached || node.detached) svg.push(`<text class="tree-detached-label" x="${pos.x}" y="${pos.y + 51}" text-anchor="middle">尚未连接到树</text>`);
       svg.push("</g>");
@@ -75,7 +80,10 @@
 
     const direction = Number(values.direction);
     let comparison = "准备开始递归插入";
-    if (isNullPointer(values.current)) comparison = `current = NULL，创建 ${values.target}`;
+    if (isRedBlack) {
+      const cases = {0:"按 BST 次序插入红色新结点",1:"红父红叔：父叔染黑、祖父染红",2:"红父黑叔 + LL 外侧：右旋祖父",3:"旋转与重染色已完成",4:"检查并恢复全部红黑性质"};
+      comparison = cases[Number(values.case_code)] || "执行红黑树插入修复";
+    } else if (isNullPointer(values.current)) comparison = `current = NULL，创建 ${values.target}`;
     else if (direction < 0) comparison = `${values.target} < 当前节点，进入 left`;
     else if (direction > 0) comparison = `${values.target} > 当前节点，进入 right`;
     else if (!isNullPointer(values.new_node)) comparison = `插入 ${values.target} 完成`;
@@ -89,6 +97,7 @@
         <span><i class="tree-swatch current"></i>current</span>
         <span><i class="tree-swatch fresh"></i>new_node</span>
         <span><i class="tree-swatch detached"></i>未连接结点</span>
+        ${isRedBlack ? '<span><i class="tree-swatch red"></i>红结点</span><span><i class="tree-swatch black"></i>黑结点</span>' : ''}
       </div>
       ${svg.join("")}
       <div class="tree-runtime">
@@ -97,11 +106,11 @@
           <span>root <b>${escapeHtml(shortAddress(values.root))}</b></span>
           <span>current <b>${escapeHtml(shortAddress(values.current))}</b></span>
           <span>new_node <b>${escapeHtml(shortAddress(values.new_node))}</b></span>
-          <span>depth <b>${escapeHtml(values.depth)}</b></span>
+          <span>${isRedBlack ? "repair case" : "depth"} <b>${escapeHtml(isRedBlack ? values.case_code : values.depth)}</b></span>
         </div>
         <div class="tree-call-stack">
           <strong>LLDB CALL STACK</strong>
-          <div>${callStack.map(frame => `<span class="tree-frame ${frame.function === "bst_insert" ? "recursive" : ""}">#${frame.index} ${escapeHtml(frame.function)}</span>`).join('<i>←</i>') || '<span class="tree-frame">等待调试器帧</span>'}</div>
+          <div>${callStack.map(frame => `<span class="tree-frame ${["bst_insert","rb_insert","rb_fixup","rotate_left","rotate_right"].includes(frame.function) ? "recursive" : ""}">#${frame.index} ${escapeHtml(frame.function)}</span>`).join('<i>←</i>') || '<span class="tree-frame">等待调试器帧</span>'}</div>
         </div>
       </div>
     `;
@@ -109,4 +118,5 @@
   }
 
   RendererRegistry["binary-tree"] = renderBinaryTree;
+  RendererRegistry["red-black-tree"] = renderBinaryTree;
 })();

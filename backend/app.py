@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 app = FastAPI(title="Data Structure Five-View Lab API", version=APP_VERSION)
 
 app.add_middleware(
@@ -308,6 +308,75 @@ int main(void) {
 }
 """
 
+RB_TREE_SOURCE = r'''#include <stdio.h>
+#include <stdlib.h>
+typedef enum { BLACK=0, RED=1 } Color;
+typedef struct Node { int data; Color color; struct Node *left,*right,*parent; } Node;
+static Node *g_root=NULL,*g_current=NULL,*g_new_node=NULL;
+static int g_target=0,g_case=0;
+static Node *make_node(int value,Color color){Node *n=(Node*)malloc(sizeof(Node));if(!n)exit(2);n->data=value;n->color=color;n->left=n->right=n->parent=NULL;return n;}
+static int node_depth(Node *n){int d=0;while(n&&n->parent){d++;n=n->parent;}return d;}
+static void print_node(Node *n,int *first){if(!n)return;if(!*first)printf(",");*first=0;printf("{\"address\":\"%p\",\"data\":%d,\"color\":\"%s\",\"left\":\"%p\",\"right\":\"%p\",\"parent\":\"%p\",\"detached\":false}",(void*)n,n->data,n->color==RED?"red":"black",(void*)n->left,(void*)n->right,(void*)n->parent);print_node(n->left,first);print_node(n->right,first);}
+__attribute__((noinline)) static void snap(const char *step){
+    printf("SNAPSHOT:{\"step\":\"%s\",\"values\":{\"root\":\"%p\",\"current\":\"%p\",\"new_node\":\"%p\",\"target\":%d,\"depth\":%d,\"direction\":0,\"case_code\":%d},\"tree\":[",step,(void*)g_root,(void*)g_current,(void*)g_new_node,g_target,node_depth(g_current),g_case);
+    int first=1;print_node(g_root,&first);printf("]}\n");
+}
+static void rotate_right(Node **root,Node *grand){Node *parent=grand->left;grand->left=parent->right;if(parent->right)parent->right->parent=grand;parent->parent=grand->parent;if(!grand->parent)*root=parent;else if(grand==grand->parent->left)grand->parent->left=parent;else grand->parent->right=parent;parent->right=grand;grand->parent=parent;}
+static void rotate_left(Node **root,Node *grand){Node *parent=grand->right;grand->right=parent->left;if(parent->left)parent->left->parent=grand;parent->parent=grand->parent;if(!grand->parent)*root=parent;else if(grand==grand->parent->left)grand->parent->left=parent;else grand->parent->right=parent;parent->left=grand;grand->parent=parent;}
+static Node *bst_attach(Node **root,int value){Node *parent=NULL,*cursor=*root;while(cursor){parent=cursor;cursor=value<cursor->data?cursor->left:cursor->right;}Node *node=make_node(value,RED);node->parent=parent;if(!parent)*root=node;else if(value<parent->data)parent->left=node;else parent->right=node;return node;}
+__attribute__((noinline)) static void rb_fixup(Node **root,Node *node){
+    while(node!=*root&&node->parent->color==RED){Node *parent=node->parent,*grand=parent->parent,*uncle=NULL;
+        if(parent==grand->left){uncle=grand->right;if(uncle&&uncle->color==RED){
+                if(g_target==1){g_case=1;g_current=parent;snap("红父红叔：准备将父结点和叔结点染黑");} /* TRACE_STAGE_3 */
+                parent->color=BLACK;uncle->color=BLACK;grand->color=RED;
+                if(g_target==1){g_current=grand;snap("重染色完成：祖父暂时变红，继续向上检查");} /* TRACE_STAGE_4 */
+                node=grand;
+            }else{
+                if(node==parent->right){node=parent;rotate_left(root,node);parent=node->parent;grand=parent->parent;}
+                if(g_target==0){g_case=2;g_current=grand;snap("红父黑叔且为 LL 外侧：准备右旋祖父 5");} /* TRACE_STAGE_7 */
+                parent->color=BLACK;grand->color=RED;rotate_right(root,grand);
+                if(g_target==0){g_case=3;g_current=parent;snap("右旋并重染色完成：1 成为该子树的新根");} /* TRACE_STAGE_8 */
+            }
+        }else{uncle=grand->left;if(uncle&&uncle->color==RED){parent->color=BLACK;uncle->color=BLACK;grand->color=RED;node=grand;}else{if(node==parent->left){node=parent;rotate_right(root,node);parent=node->parent;grand=parent->parent;}parent->color=BLACK;grand->color=RED;rotate_left(root,grand);}}
+    }
+    (*root)->color=BLACK;
+    if(g_target==1){g_case=4;g_current=*root;snap("根结点恢复为黑色：第一次插入完成");} /* TRACE_STAGE_5 */
+}
+static Node *rb_insert(Node **root,int value){g_target=value;g_case=0;g_new_node=bst_attach(root,value);g_root=*root;g_current=g_new_node;
+    if(value==1)snap("插入 1：新结点按 BST 规则作为红色叶子连接到 5"); /* TRACE_STAGE_2 */
+    else snap("插入 0：新结点为红色，父结点 1 也是红色，发生冲突"); /* TRACE_STAGE_6 */
+    rb_fixup(root,g_new_node);g_root=*root;return g_new_node;}
+static void free_tree(Node *n){if(!n)return;free_tree(n->left);free_tree(n->right);free(n);}
+int main(void){setvbuf(stdout,NULL,_IONBF,0);g_root=make_node(10,BLACK);g_root->left=make_node(5,RED);g_root->right=make_node(15,RED);g_root->left->parent=g_root;g_root->right->parent=g_root;g_current=g_root;g_target=1;g_case=0;
+    snap("初始合法红黑树：根 10 黑，孩子 5 和 15 红"); /* TRACE_STAGE_1 */
+    rb_insert(&g_root,1);rb_insert(&g_root,0);g_target=0;g_case=4;g_current=g_new_node;snap("插入完成：根黑、无连续红结点、各路径黑高一致"); /* TRACE_STAGE_9 */
+    printf("PROGRAM_STDOUT:root=10 left=1 colors=black,black,red,red,black\n");free_tree(g_root);return 0;}
+'''
+
+RB_TREE_DISPLAY = """void rb_insert(int target) {
+    Node *node = bst_attach(target);
+    node->color = RED;
+
+    while (node->parent->color == RED) {
+        Node *uncle = sibling(node->parent);
+        if (uncle->color == RED) {
+            node->parent->color = BLACK;
+            uncle->color = BLACK;
+            node->parent->parent->color = RED;
+            node = node->parent->parent;
+        } else {
+            node->parent->color = BLACK;
+            node->parent->parent->color = RED;
+            rotate_right(node->parent->parent);
+        }
+    }
+    root->color = BLACK;
+}
+
+rb_insert(1);
+rb_insert(0);
+"""
+
 BFS_SOURCE = r'''#include <stdio.h>
 #define N 5
 static const char labels[N]={'A','B','C','D','E'};
@@ -409,6 +478,7 @@ DEMOS = {
     "stack-push-pop": {"title":"顺序栈：push 与 pop","subtitle":"栈顶移动、有效区间与残留内存值同步显示","category":"stack","renderer":"stack","pseudo":["1. 原栈自底向上为 [10, 20]","2. top++，为新元素预留栈顶位置","3. data[top] = 30，push 完成","4. popped = data[top]，读取栈顶","5. top--，pop 完成（物理槽位仍保留 30）"],"display_source":STACK_DISPLAY,"source":STACK_SOURCE,"display_stage_lines":[3,8,9,12,13],"display_stage_text":["int top = 1;","top++;","data[top] = value;","popped = data[top];","top--;"],"frame_vars":["data","top","capacity","value","popped"],"pointer_names":[]},
     "circular-queue-enqueue-dequeue": {"title":"循环队列：enqueue 与 dequeue","subtitle":"队首、队尾、有效元素与 rear 回绕同步显示","category":"queue","renderer":"circular-queue","pseudo":["1. 原队列 front=2、rear=4，逻辑内容 [20, 30]","2. queue[rear] = 40，写入待入队元素","3. rear = (rear + 1) % capacity，回绕到 0","4. removed = queue[front]，读取队首 20","5. front 前移且 size--，dequeue 完成"],"display_source":QUEUE_DISPLAY,"source":QUEUE_SOURCE,"display_stage_lines":[3,10,11,15,16],"display_stage_text":["int front = 2;","queue[rear] = value;","rear = (rear + 1) % 5;","removed = queue[front];","front = (front + 1) % 5;"],"frame_vars":["queue","front","rear","size","capacity","value","removed"],"pointer_names":[]},
     "bst-insert": {"title":"二叉搜索树：递归插入 60","subtitle":"树形拓扑、比较方向与真实 LLDB 递归调用栈同步显示","category":"tree","renderer":"binary-tree","pseudo":["1. 建立二叉搜索树：根 50，左 30，右 70","2. 比较 60 > 50，递归进入右子树","3. 比较 60 < 70，递归进入左子树","4. 到达 NULL，分配结点 60","5. 递归回溯，将 70->left 指向 60","6. 插入完成，中序序列为 30, 50, 60, 70"],"display_source":TREE_DISPLAY,"source":TREE_SOURCE,"display_stage_lines":[21,13,11,8,11,23],"display_stage_text":["root->right = make_node(70);","current->right = bst_insert(...);","current->left = bst_insert(...);","return make_node(target);","current->left = bst_insert(...);","root = bst_insert(root, 60);"],"frame_vars":["root","current","new_node","target","depth","direction"],"pointer_names":["root","current","new_node"],"breakpoint_mode":"snap-caller"},
+    "red-black-tree-insert": {"title":"红黑树：插入 1、0（重染色 + 右旋）","subtitle":"验证红黑性质、父叔颜色分支、重染色与旋转后的拓扑变化","category":"tree","renderer":"red-black-tree","tree_mode":"red-black","pseudo":["1. 初始合法树：10(B) 的孩子为 5(R)、15(R)","2. 插入 1(R)，作为 5 的左孩子","3. 检测到父结点 5 与叔结点 15 均为红色","4. 父叔染黑、祖父 10 暂时染红","5. 根结点恢复黑色，第一次插入完成","6. 插入 0(R)，与红色父结点 1 冲突","7. 叔结点为黑色且形成 LL 外侧结构","8. 父结点 1 染黑、祖父 5 染红并右旋","9. 验证根黑、红结点子女黑、各根叶路径黑高一致"],"display_source":RB_TREE_DISPLAY,"source":RB_TREE_SOURCE,"display_stage_lines":[21,3,7,10,18,3,12,15,18],"display_stage_text":["rb_insert(1);","node->color = RED;","if (uncle->color == RED)","grandparent->color = RED;","root->color = BLACK;","node->color = RED;","else // uncle is BLACK","rotate_right(grandparent);","root->color = BLACK;"],"frame_vars":["g_root","g_current","g_new_node","g_target","g_case"],"pointer_names":["root","current","new_node"],"breakpoint_mode":"snap-caller"},
     "graph-bfs": {"title":"图：广度优先搜索 BFS","subtitle":"结点状态、生成树边与真实循环队列同步显示","category":"graph","renderer":"graph","graph_mode":"bfs","pseudo":["1. A 入队，标记为 frontier","2. A 出队并标记 visited","3. 扫描 A，发现 B、C 并入队","4. B 出队，发现 D、E 并入队","5. C 出队，相邻结点均已发现","6. 继续处理 D、E，BFS 完成"],"display_source":BFS_DISPLAY,"source":BFS_SOURCE,"display_stage_lines":[3,6,11,15,11,5],"display_stage_text":["queue[rear++] = start;","current = queue[front++];","扫描 A 的相邻结点","queue[rear++] = next;","扫描 C 的相邻结点","while (front < rear)"],"frame_vars":["state","parent","distance","queue","front","rear","current","order","order_len"],"pointer_names":[],"breakpoint_mode":"snap-caller"},
     "graph-dfs": {"title":"图：深度优先搜索 DFS","subtitle":"活动结点、完成结点与真实 LLDB 递归栈同步显示","category":"graph","renderer":"graph","graph_mode":"dfs","pseudo":["1. 初始化：所有结点均为 unseen","2. 进入 A，压入递归栈","3. 从 A 进入 B","4. 从 B 进入 D","5. 回溯后从 B 进入 E","6. 从 E 进入 C","7. 全部递归返回，DFS 完成"],"display_source":DFS_DISPLAY,"source":DFS_SOURCE,"display_stage_lines":[18,2,9,9,9,9,13],"display_stage_text":["dfs(A, 0);","state[current] = ACTIVE;","dfs(next, depth + 1);","dfs(next, depth + 1);","dfs(next, depth + 1);","dfs(next, depth + 1);","state[current] = FINISHED;"],"frame_vars":["current","depth","state","parent","metric","stack","stack_size","order","order_len"],"pointer_names":[],"breakpoint_mode":"snap-caller"},
 }
@@ -421,6 +491,7 @@ DEMO_DETAILS = {
     "stack-push-pop": {"method":"顺序栈入栈 + 出栈","position":"仅操作栈顶 top","storage":"顺序栈（连续数组，LIFO）","initial":"栈底 [10, 20] 栈顶","result":"push 30 后再 pop，逻辑栈恢复为 [10, 20]","time":"push O(1)，pop O(1)","space":"O(1)","precondition":"push 前栈未满；pop 前栈非空","key":"top 决定逻辑有效区；pop 后槽位中的 30 只是物理残留"},
     "circular-queue-enqueue-dequeue": {"method":"循环队列入队 + 出队","position":"rear 写入，front 读取","storage":"循环数组（FIFO）","initial":"front=2，rear=4，逻辑队列 [20, 30]","result":"入队 40、出队 20，得到 [30, 40]","time":"enqueue O(1)，dequeue O(1)","space":"O(1)","precondition":"入队前队列未满；出队前队列非空","key":"索引用 (index + 1) % capacity 回绕；物理下标不等于逻辑顺序"},
     "bst-insert": {"method":"二叉搜索树递归插入","position":"按比较结果定位叶子空位","storage":"链式二叉树（堆结点）","initial":"根 50，左 30，右 70","result":"60 成为 70 的左孩子","time":"平均 O(log n)，最坏 O(n)","space":"递归栈平均 O(log n)，最坏 O(n)","precondition":"满足 BST：左子树 < 根 < 右子树","key":"比较决定递归方向；返回时把新子树根重新连接给父结点"},
+    "red-black-tree-insert": {"method":"红黑树插入修复（重染色 + 单旋）","position":"按 BST 插入 1、0，再自底向上修复","storage":"带 parent 与 color 元数据的链式二叉搜索树","initial":"10(B)，左 5(R)，右 15(R)","result":"10(B) 的左子树变为 1(B)，其孩子为 0(R)、5(R)","time":"每次插入 O(log n)","space":"迭代修复 O(1)","precondition":"输入树满足 BST 次序和 5 条红黑性质","key":"新结点先染红；红叔重染色，黑叔按内外侧结构旋转；根最终强制为黑"},
     "graph-bfs": {"method":"广度优先搜索（BFS）","position":"从顶点 A 开始，按层扩展","storage":"邻接矩阵 + 循环队列","initial":"5 个顶点均为 unseen","result":"访问序列 A → B → C → D → E","time":"邻接矩阵 O(V²)","space":"O(V)","precondition":"发现顶点时立即标记 frontier，避免重复入队","key":"FIFO 队列保证按距离层次访问；parent 边组成 BFS 生成树"},
     "graph-dfs": {"method":"深度优先搜索（DFS）","position":"从顶点 A 开始，递归深入","storage":"邻接矩阵 + 递归调用栈","initial":"5 个顶点均为 unseen","result":"先序访问 A → B → D → E → C","time":"邻接矩阵 O(V²)","space":"O(V)","precondition":"进入顶点时标记 active，返回前标记 finished","key":"LIFO 递归栈记录当前搜索路径；回溯后继续扫描未访问邻接点"},
 }
@@ -534,11 +605,14 @@ def _normalize_snapshot(raw:dict,demo:dict)->dict:
         for name in ("front","rear"):
             index=values.get(name)
             if isinstance(index,int):relations.append({"from":name,"to":f"queue-cell-{index}","kind":"index-pointer"})
-    elif renderer=="binary-tree":
+    elif renderer in {"binary-tree","red-black-tree"}:
         values=raw.get("values",{});nodes=raw.get("tree",[]);by_addr={str(n.get("address")):n for n in nodes}
         for name,value in values.items():variables.append({"name":name,"type":"Node *" if name in {"root","current","new_node"} else "int","value":value,"kind":"pointer" if name in {"root","current","new_node"} else "scalar"})
         for node in nodes:
-            address=str(node.get("address"));objects.append({"id":address,"type":"Node","address":address,"label":str(node.get("data")),"fields":{"data":node.get("data"),"left":node.get("left"),"right":node.get("right"),"detached":node.get("detached",False)}})
+            address=str(node.get("address"));fields={"data":node.get("data"),"left":node.get("left"),"right":node.get("right"),"detached":node.get("detached",False)}
+            for metadata in ("parent","color","height","balance","priority"):
+                if metadata in node:fields[metadata]=node.get(metadata)
+            objects.append({"id":address,"type":"TreeNode","address":address,"label":str(node.get("data")),"fields":fields})
             for field in ("left","right"):
                 child=str(node.get(field))
                 if child in by_addr:relations.append({"from":address,"field":field,"to":child,"kind":"tree-edge"})
@@ -554,6 +628,7 @@ def _normalize_snapshot(raw:dict,demo:dict)->dict:
             if vertex.get("parent",-1)>=0:relations.append({"from":f"vertex-{vertex['parent']}","to":f"vertex-{vertex['id']}","kind":"traversal-tree"})
     visualization={"renderer":renderer,"category":demo["category"]}
     if renderer=="graph":visualization["mode"]=demo.get("graph_mode")
+    if renderer in {"binary-tree","red-black-tree"}:visualization["mode"]=demo.get("tree_mode","binary-search")
     raw["model"]={"schema":"five-view.snapshot.v1","variables":variables,"objects":objects,"relations":relations,"execution":raw.get("debugger",{}),"visualization":visualization}
     return raw
 
@@ -571,7 +646,7 @@ def _run_demo(demo_id:str)->dict:
             for i,snap in enumerate(snapshots[:count]):snap["debugger"]={"engine":"instrumentation-fallback","display_source_line":demo["display_stage_lines"][i],"display_source_text":demo["display_stage_text"][i]}
             engine,fallback="instrumentation-fallback",True
         snapshots=[_normalize_snapshot(s,demo) for s in snapshots]
-        return {"demo_id":demo_id,"title":demo["title"],"subtitle":demo["subtitle"],"details":demo.get("details",{}),"category":demo["category"],"renderer":demo["renderer"],"graph_mode":demo.get("graph_mode"),"pseudo":demo["pseudo"],"display_source":demo["display_source"],"pointer_names":demo.get("pointer_names",[]),"snapshot_schema":"five-view.snapshot.v1","compiler":"clang","debug_build":True,"execution_engine":engine,"lldb_breakpoint_hits":lr["breakpoint_hits"],"lldb_frame_reads":lr["frame_reads"],"lldb_fallback":fallback,"timeline_mode":"source-line","storage_semantics":"LLDB 负责真实源码断点与局部变量读取；结构化快照归一化为统一 snapshot model，再由数据结构专用 Renderer 解释。","address_note":"地址来自本次 Render 容器中的真实 C 调试进程；ASLR 会使不同运行地址变化。","snapshots":snapshots,"stdout":program_stdout}
+        return {"demo_id":demo_id,"title":demo["title"],"subtitle":demo["subtitle"],"details":demo.get("details",{}),"category":demo["category"],"renderer":demo["renderer"],"graph_mode":demo.get("graph_mode"),"tree_mode":demo.get("tree_mode"),"pseudo":demo["pseudo"],"display_source":demo["display_source"],"pointer_names":demo.get("pointer_names",[]),"snapshot_schema":"five-view.snapshot.v1","compiler":"clang","debug_build":True,"execution_engine":engine,"lldb_breakpoint_hits":lr["breakpoint_hits"],"lldb_frame_reads":lr["frame_reads"],"lldb_fallback":fallback,"timeline_mode":"source-line","storage_semantics":"LLDB 负责真实源码断点与局部变量读取；结构化快照归一化为统一 snapshot model，再由数据结构专用 Renderer 解释。","address_note":"地址来自本次 Render 容器中的真实 C 调试进程；ASLR 会使不同运行地址变化。","snapshots":snapshots,"stdout":program_stdout}
 
 
 def _debugger_capability()->dict:
@@ -591,7 +666,7 @@ def root():return utf8_json({"service":"five-view-lab-backend","status":"ok","do
 @app.get("/health")
 def health():return utf8_json({"status":"ok","service":"five-view-lab-backend","version":APP_VERSION,"snapshot_schema":"five-view.snapshot.v1"})
 @app.get("/api/demos")
-def list_demos():return utf8_json([{"id":k,"title":v["title"],"subtitle":v["subtitle"],"details":v.get("details",{}),"category":v["category"],"renderer":v["renderer"]} for k,v in DEMOS.items()])
+def list_demos():return utf8_json([{"id":k,"title":v["title"],"subtitle":v["subtitle"],"details":v.get("details",{}),"category":v["category"],"renderer":v["renderer"],"tree_mode":v.get("tree_mode")} for k,v in DEMOS.items()])
 @app.get("/api/debugger-capability")
 def debugger_capability():return utf8_json(_debugger_capability())
 @app.post("/api/run-demo")
