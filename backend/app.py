@@ -343,7 +343,11 @@ def _extract_call_stack(block:str)->list[dict]:
     for line in block.splitlines():
         match=re.search(r"frame #(\d+):.*?`([A-Za-z_][A-Za-z0-9_]*)",line)
         if match:frames[int(match.group(1))]=match.group(2)
-    return [{"index":index,"function":frames[index]} for index in sorted(frames)]
+    result=[]
+    for index in sorted(frames):
+        result.append({"index":index,"function":frames[index]})
+        if frames[index]=="main":break
+    return result
 
 
 def _run_demo_lldb(exe:Path,td:str,demo:dict)->dict:
