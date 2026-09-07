@@ -4,9 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>数据结构五维教学实验室</title>
-  <link rel="stylesheet" href="./styles.css?v=1.0.0" />
-  <link rel="stylesheet" href="./linear-renderers.css?v=1.0.0" />
-  <link rel="stylesheet" href="./tree-renderer.css?v=1.0.0" />
+  <link rel="stylesheet" href="./styles.css?v=1.1.0" />
+  <link rel="stylesheet" href="./linear-renderers.css?v=1.1.0" />
+  <link rel="stylesheet" href="./tree-renderer.css?v=1.1.0" />
+  <link rel="stylesheet" href="./graph-renderer.css?v=1.1.0" />
 </head>
 <body>
   <header class="topbar">
@@ -20,13 +21,13 @@
 
   <main>
     <section class="notice">
-      <strong>v1.0 · Tree Renderer + Recursive Call Stack</strong>
-      <span>真实 Clang + LLDB 时间轴现已覆盖线性结构与二叉搜索树；树节点访问、比较方向和递归调用栈同步显示。</span>
+      <strong>v1.1 · General Renderer Coverage</strong>
+      <span>数组、链表、栈、队列、树、图统一接入真实 Clang + LLDB 时间轴；BFS 队列与 DFS 递归栈同步显示。</span>
     </section>
 
     <section class="demo-toolbar">
       <div class="demo-copy">
-        <div class="eyebrow">LIVE DEMO · v1.0 TREE / RECURSION</div>
+        <div class="eyebrow">LIVE DEMO · v1.1 GRAPH / TRAVERSAL</div>
         <h2 id="demo-title">数据结构算法实验</h2>
         <p id="demo-subtitle">选择一种数据结构算法，五个视图共享同一真实调试时间轴。</p>
       </div>
@@ -79,9 +80,10 @@
     </section>
   </main>
 
-  <script src="./app.js?v=1.0.0"></script>
-  <script src="./array-renderer.js?v=1.0.0"></script>
-  <script src="./linear-renderers.js?v=1.0.0"></script>
-  <script src="./tree-renderer.js?v=1.0.0"></script>
+  <script src="./app.js?v=1.1.0"></script>
+  <script src="./array-renderer.js?v=1.1.0"></script>
+  <script src="./linear-renderers.js?v=1.1.0"></script>
+  <script src="./tree-renderer.js?v=1.1.0"></script>
+  <script src="./graph-renderer.js?v=1.1.0"></script>
 </body>
 </html>

@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 app = FastAPI(title="Data Structure Five-View Lab API", version=APP_VERSION)
 
 app.add_middleware(
@@ -281,6 +281,99 @@ int main(void) {
 }
 """
 
+BFS_SOURCE = r'''#include <stdio.h>
+#define N 5
+static const char labels[N]={'A','B','C','D','E'};
+static const int edge_u[5]={0,0,1,1,2},edge_v[5]={1,2,3,4,4};
+__attribute__((noinline)) static void snap(const char *step,int state[N],int parent[N],int distance[N],int queue[N],int front,int rear,int current,int order[N],int order_len){
+    printf("SNAPSHOT:{\"step\":\"%s\",\"values\":{\"current\":%d,\"front\":%d,\"rear\":%d,\"visit_count\":%d},\"graph\":{\"directed\":false,\"vertices\":[",step,current,front,rear,order_len);
+    for(int k=0;k<N;k++){if(k)printf(",");printf("{\"id\":%d,\"label\":\"%c\",\"address\":\"%p\",\"state\":%d,\"parent\":%d,\"metric\":%d}",k,labels[k],(void*)&state[k],state[k],parent[k],distance[k]);}
+    printf("],\"edges\":[");for(int k=0;k<5;k++){if(k)printf(",");printf("{\"from\":%d,\"to\":%d}",edge_u[k],edge_v[k]);}
+    printf("]},\"worklist\":{\"kind\":\"queue\",\"items\":[");for(int k=0;k<N;k++){if(k)printf(",");printf("{\"slot\":%d,\"address\":\"%p\",\"vertex\":%d,\"active\":%s}",k,(void*)&queue[k],queue[k],k>=front&&k<rear?"true":"false");}
+    printf("]},\"order\":[");for(int k=0;k<order_len;k++){if(k)printf(",");printf("%d",order[k]);}printf("]}\n");
+}
+static void discover(int current,int adj[N][N],int state[N],int parent[N],int distance[N],int queue[N],int *rear){for(int next=0;next<N;next++)if(adj[current][next]&&state[next]==0){state[next]=1;parent[next]=current;distance[next]=distance[current]+1;queue[(*rear)++]=next;}}
+int main(void){
+    setvbuf(stdout,NULL,_IONBF,0);int adj[N][N]={{0,1,1,0,0},{1,0,0,1,1},{1,0,0,0,1},{0,1,0,0,0},{0,1,1,0,0}};
+    int state[N]={0},parent[N]={-1,-1,-1,-1,-1},distance[N]={-1,-1,-1,-1,-1},queue[N]={-1,-1,-1,-1,-1},order[N]={-1,-1,-1,-1,-1};int front=0,rear=0,current=-1,order_len=0;
+    state[0]=1;distance[0]=0;queue[rear++]=0;snap("BFS 初始化：A 入队并标记为 frontier",state,parent,distance,queue,front,rear,current,order,order_len); /* TRACE_STAGE_1 */
+    current=queue[front++];state[current]=2;order[order_len++]=current;snap("A 出队：标记 visited",state,parent,distance,queue,front,rear,current,order,order_len); /* TRACE_STAGE_2 */
+    discover(current,adj,state,parent,distance,queue,&rear);snap("扫描 A：发现 B、C 并入队",state,parent,distance,queue,front,rear,current,order,order_len); /* TRACE_STAGE_3 */
+    current=queue[front++];state[current]=2;order[order_len++]=current;discover(current,adj,state,parent,distance,queue,&rear);snap("B 出队：发现 D、E 并入队",state,parent,distance,queue,front,rear,current,order,order_len); /* TRACE_STAGE_4 */
+    current=queue[front++];state[current]=2;order[order_len++]=current;discover(current,adj,state,parent,distance,queue,&rear);snap("C 出队：相邻结点均已发现",state,parent,distance,queue,front,rear,current,order,order_len); /* TRACE_STAGE_5 */
+    while(front<rear){current=queue[front++];state[current]=2;order[order_len++]=current;discover(current,adj,state,parent,distance,queue,&rear);}snap("BFS 完成：访问序列 A, B, C, D, E",state,parent,distance,queue,front,rear,current,order,order_len); /* TRACE_STAGE_6 */
+    printf("PROGRAM_STDOUT:bfs=A B C D E visited=%d\n",order_len);return 0;
+}
+'''
+
+BFS_DISPLAY = """void bfs(int start) {
+    state[start] = FRONTIER;
+    queue[rear++] = start;
+
+    while (front < rear) {
+        int current = queue[front++];
+        state[current] = VISITED;
+        order[order_len++] = current;
+
+        for (int next = 0; next < N; next++) {
+            if (adj[current][next] && state[next] == UNSEEN) {
+                state[next] = FRONTIER;
+                parent[next] = current;
+                distance[next] = distance[current] + 1;
+                queue[rear++] = next;
+            }
+        }
+    }
+}
+"""
+
+DFS_SOURCE = r'''#include <stdio.h>
+#define N 5
+static const char labels[N]={'A','B','C','D','E'};
+static const int edge_u[5]={0,0,1,1,2},edge_v[5]={1,2,3,4,4};
+__attribute__((noinline)) static void snap(const char *step,int state[N],int parent[N],int metric[N],int current,int stack[N],int stack_size,int order[N],int order_len){
+    printf("SNAPSHOT:{\"step\":\"%s\",\"values\":{\"current\":%d,\"stack_size\":%d,\"visit_count\":%d},\"graph\":{\"directed\":false,\"vertices\":[",step,current,stack_size,order_len);
+    for(int k=0;k<N;k++){if(k)printf(",");printf("{\"id\":%d,\"label\":\"%c\",\"address\":\"%p\",\"state\":%d,\"parent\":%d,\"metric\":%d}",k,labels[k],(void*)&state[k],state[k],parent[k],metric[k]);}
+    printf("],\"edges\":[");for(int k=0;k<5;k++){if(k)printf(",");printf("{\"from\":%d,\"to\":%d}",edge_u[k],edge_v[k]);}
+    printf("]},\"worklist\":{\"kind\":\"stack\",\"items\":[");for(int k=0;k<N;k++){if(k)printf(",");printf("{\"slot\":%d,\"address\":\"%p\",\"vertex\":%d,\"active\":%s}",k,(void*)&stack[k],stack[k],k<stack_size?"true":"false");}
+    printf("]},\"order\":[");for(int k=0;k<order_len;k++){if(k)printf(",");printf("%d",order[k]);}printf("]}\n");
+}
+__attribute__((noinline)) static void dfs(int current,int depth,int adj[N][N],int state[N],int parent[N],int metric[N],int stack[N],int *stack_size,int order[N],int *order_len){
+    char step[96];state[current]=1;metric[current]=depth;stack[(*stack_size)++]=current;order[(*order_len)++]=current;snprintf(step,sizeof(step),"DFS 进入 %c：压入递归栈",labels[current]);snap(step,state,parent,metric,current,stack,*stack_size,order,*order_len); /* TRACE_STAGE_2 */
+    for(int next=0;next<N;next++)if(adj[current][next]&&state[next]==0){parent[next]=current;dfs(next,depth+1,adj,state,parent,metric,stack,stack_size,order,order_len);}
+    state[current]=2;(*stack_size)--;
+}
+int main(void){
+    setvbuf(stdout,NULL,_IONBF,0);int adj[N][N]={{0,1,1,0,0},{1,0,0,1,1},{1,0,0,0,1},{0,1,0,0,0},{0,1,1,0,0}};
+    int state[N]={0},parent[N]={-1,-1,-1,-1,-1},metric[N]={-1,-1,-1,-1,-1},stack[N]={-1,-1,-1,-1,-1},order[N]={-1,-1,-1,-1,-1};int stack_size=0,order_len=0,current=-1,depth=-1;
+    snap("DFS 初始化：所有结点均为 unseen",state,parent,metric,current,stack,stack_size,order,order_len); /* TRACE_STAGE_1 */
+    dfs(0,0,adj,state,parent,metric,stack,&stack_size,order,&order_len);
+    current=-1;snap("DFS 完成：先序访问 A, B, D, E, C",state,parent,metric,current,stack,stack_size,order,order_len); /* TRACE_STAGE_3 */
+    printf("PROGRAM_STDOUT:dfs=A B D E C visited=%d\n",order_len);return 0;
+}
+'''
+
+DFS_DISPLAY = """void dfs(int current, int depth) {
+    state[current] = ACTIVE;
+    stack[stack_size++] = current;
+    order[order_len++] = current;
+
+    for (int next = 0; next < N; next++) {
+        if (adj[current][next] && state[next] == UNSEEN) {
+            parent[next] = current;
+            dfs(next, depth + 1);
+        }
+    }
+
+    state[current] = FINISHED;
+    stack_size--;
+}
+
+int main(void) {
+    dfs(A, 0);
+}
+"""
+
 DEMOS = {
     "linked-list-insert": {"title":"单链表：头插一个新结点","subtitle":"节点与指针关系视图","category":"linked-list","renderer":"singly-linked-list","pseudo":["1. 建立原链表 head -> a","2. 申请新结点 s","3. s->next = head","4. head = s"],"display_source":INSERT_DISPLAY,"source":INSERT_SOURCE,"display_stage_lines":[14,18,20,21],"display_stage_text":["head = a;","s->next = NULL;","s->next = head;","head = s;"],"frame_vars":["head","a","s"],"pointer_names":["head","a","s"]},
     "linked-list-delete-head": {"title":"单链表：删除首元结点","subtitle":"脱链与 free 分开显示","category":"linked-list","renderer":"singly-linked-list","pseudo":["1. 原链表 head -> a -> b","2. p = head 保存待删除结点","3. head = head->next 越过 a","4. free(p) 释放原首结点"],"display_source":DELETE_DISPLAY,"source":DELETE_SOURCE,"display_stage_lines":[16,17,18,19],"display_stage_text":["p = head;","head = head->next;","free(p);","p = NULL;"],"frame_vars":["head","a","b","p"],"pointer_names":["head","a","b","p"]},
@@ -288,6 +381,8 @@ DEMOS = {
     "stack-push-pop": {"title":"顺序栈：push 与 pop","subtitle":"栈顶移动、有效区间与残留内存值同步显示","category":"stack","renderer":"stack","pseudo":["1. 原栈自底向上为 [10, 20]","2. top++，为新元素预留栈顶位置","3. data[top] = 30，push 完成","4. popped = data[top]，读取栈顶","5. top--，pop 完成（物理槽位仍保留 30）"],"display_source":STACK_DISPLAY,"source":STACK_SOURCE,"display_stage_lines":[3,8,9,12,13],"display_stage_text":["int top = 1;","top++;","data[top] = value;","popped = data[top];","top--;"],"frame_vars":["data","top","capacity","value","popped"],"pointer_names":[]},
     "circular-queue-enqueue-dequeue": {"title":"循环队列：enqueue 与 dequeue","subtitle":"队首、队尾、有效元素与 rear 回绕同步显示","category":"queue","renderer":"circular-queue","pseudo":["1. 原队列 front=2、rear=4，逻辑内容 [20, 30]","2. queue[rear] = 40，写入待入队元素","3. rear = (rear + 1) % capacity，回绕到 0","4. removed = queue[front]，读取队首 20","5. front 前移且 size--，dequeue 完成"],"display_source":QUEUE_DISPLAY,"source":QUEUE_SOURCE,"display_stage_lines":[3,10,11,15,16],"display_stage_text":["int front = 2;","queue[rear] = value;","rear = (rear + 1) % 5;","removed = queue[front];","front = (front + 1) % 5;"],"frame_vars":["queue","front","rear","size","capacity","value","removed"],"pointer_names":[]},
     "bst-insert": {"title":"二叉搜索树：递归插入 60","subtitle":"树形拓扑、比较方向与真实 LLDB 递归调用栈同步显示","category":"tree","renderer":"binary-tree","pseudo":["1. 建立二叉搜索树：根 50，左 30，右 70","2. 比较 60 > 50，递归进入右子树","3. 比较 60 < 70，递归进入左子树","4. 到达 NULL，分配结点 60","5. 递归回溯，将 70->left 指向 60","6. 插入完成，中序序列为 30, 50, 60, 70"],"display_source":TREE_DISPLAY,"source":TREE_SOURCE,"display_stage_lines":[21,13,11,8,11,23],"display_stage_text":["root->right = make_node(70);","current->right = bst_insert(...);","current->left = bst_insert(...);","return make_node(target);","current->left = bst_insert(...);","root = bst_insert(root, 60);"],"frame_vars":["root","current","new_node","target","depth","direction"],"pointer_names":["root","current","new_node"],"breakpoint_mode":"snap-caller"},
+    "graph-bfs": {"title":"图：广度优先搜索 BFS","subtitle":"结点状态、生成树边与真实循环队列同步显示","category":"graph","renderer":"graph","graph_mode":"bfs","pseudo":["1. A 入队，标记为 frontier","2. A 出队并标记 visited","3. 扫描 A，发现 B、C 并入队","4. B 出队，发现 D、E 并入队","5. C 出队，相邻结点均已发现","6. 继续处理 D、E，BFS 完成"],"display_source":BFS_DISPLAY,"source":BFS_SOURCE,"display_stage_lines":[3,6,11,15,11,5],"display_stage_text":["queue[rear++] = start;","current = queue[front++];","扫描 A 的相邻结点","queue[rear++] = next;","扫描 C 的相邻结点","while (front < rear)"],"frame_vars":["state","parent","distance","queue","front","rear","current","order","order_len"],"pointer_names":[]},
+    "graph-dfs": {"title":"图：深度优先搜索 DFS","subtitle":"活动结点、完成结点与真实 LLDB 递归栈同步显示","category":"graph","renderer":"graph","graph_mode":"dfs","pseudo":["1. 初始化：所有结点均为 unseen","2. 进入 A，压入递归栈","3. 从 A 进入 B","4. 从 B 进入 D","5. 回溯后从 B 进入 E","6. 从 E 进入 C","7. 全部递归返回，DFS 完成"],"display_source":DFS_DISPLAY,"source":DFS_SOURCE,"display_stage_lines":[19,2,9,9,9,9,14],"display_stage_text":["dfs(A, 0);","state[current] = ACTIVE;","dfs(next, depth + 1);","dfs(next, depth + 1);","dfs(next, depth + 1);","dfs(next, depth + 1);","state[current] = FINISHED;"],"frame_vars":["current","depth","state","parent","metric","stack","stack_size","order","order_len"],"pointer_names":[],"breakpoint_mode":"snap-caller"},
 }
 
 LLDB_PROBE_SOURCE = r'''#include <stdio.h>
@@ -351,8 +446,8 @@ def _extract_call_stack(block:str)->list[dict]:
 
 
 def _run_demo_lldb(exe:Path,td:str,demo:dict)->dict:
-    trace_lines=_trace_lines(demo["source"]);count=len(trace_lines);vars_=demo["frame_vars"]
     caller_mode=demo.get("breakpoint_mode")=="snap-caller"
+    trace_lines=_trace_lines(demo["source"]);count=len(demo["display_stage_lines"]);vars_=demo["frame_vars"]
     commands=(["breakpoint set --name snap"] if caller_mode else [f"breakpoint set --file demo.c --line {line}" for line in trace_lines])+["run"]
     for _ in range(count):
         commands += ["script print('FIVEVIEW_FRAME_BEGIN')"]
@@ -363,7 +458,7 @@ def _run_demo_lldb(exe:Path,td:str,demo:dict)->dict:
     argv.append(str(exe));dbg=subprocess.run(argv,cwd=td,capture_output=True,text=True,timeout=18,env={"PATH":os.environ.get("PATH","/usr/bin:/bin")})
     combined=f"{dbg.stdout}\n{dbg.stderr}";snapshots,program_stdout=_parse_program_output(combined);blocks=_extract_frame_blocks(combined);hits=min(count,len(snapshots),len(blocks))
     for i,snap in enumerate(snapshots[:count]):
-        block=blocks[i] if i<len(blocks) else "";snap["debugger"]={"engine":"lldb","breakpoint_hit":i+1,"compiled_source_line":trace_lines[i],"display_source_line":demo["display_stage_lines"][i],"display_source_text":demo["display_stage_text"][i],"frame_variables_read":all(name in block for name in vars_),"call_stack":_extract_call_stack(block),"frame_excerpt":block[-2400:]}
+        block=blocks[i] if i<len(blocks) else "";compiled_line=trace_lines[min(i,len(trace_lines)-1)] if trace_lines else 0;snap["debugger"]={"engine":"lldb","breakpoint_hit":i+1,"compiled_source_line":compiled_line,"display_source_line":demo["display_stage_lines"][i],"display_source_text":demo["display_stage_text"][i],"frame_variables_read":all(name in block for name in vars_),"call_stack":_extract_call_stack(block),"frame_excerpt":block[-2400:]}
     return {"success":dbg.returncode==0 and hits>=count and len(snapshots)==count and len(blocks)>=count,"snapshots":snapshots,"stdout":program_stdout,"breakpoint_hits":hits,"frame_reads":len(blocks),"trace":combined[-9000:]}
 
 
@@ -407,7 +502,16 @@ def _normalize_snapshot(raw:dict,demo:dict)->dict:
         for name in demo.get("pointer_names",[]):
             value=str(values.get(name))
             if value in by_addr:relations.append({"from":name,"to":value,"kind":"variable-pointer"})
-    raw["model"]={"schema":"five-view.snapshot.v1","variables":variables,"objects":objects,"relations":relations,"execution":raw.get("debugger",{}),"visualization":{"renderer":renderer,"category":demo["category"]}}
+    elif renderer=="graph":
+        values=raw.get("values",{});graph=raw.get("graph",{});vertices=graph.get("vertices",[])
+        for name,value in values.items():variables.append({"name":name,"type":"int","value":value,"kind":"vertex-index" if name=="current" else "scalar"})
+        for vertex in vertices:objects.append({"id":f"vertex-{vertex['id']}","type":"GraphVertex","address":vertex.get("address"),"label":vertex.get("label"),"fields":{"state":vertex.get("state"),"parent":vertex.get("parent"),"metric":vertex.get("metric")}})
+        for edge in graph.get("edges",[]):relations.append({"from":f"vertex-{edge['from']}","to":f"vertex-{edge['to']}","kind":"graph-edge"})
+        for vertex in vertices:
+            if vertex.get("parent",-1)>=0:relations.append({"from":f"vertex-{vertex['parent']}","to":f"vertex-{vertex['id']}","kind":"traversal-tree"})
+    visualization={"renderer":renderer,"category":demo["category"]}
+    if renderer=="graph":visualization["mode"]=demo.get("graph_mode")
+    raw["model"]={"schema":"five-view.snapshot.v1","variables":variables,"objects":objects,"relations":relations,"execution":raw.get("debugger",{}),"visualization":visualization}
     return raw
 
 
@@ -424,7 +528,7 @@ def _run_demo(demo_id:str)->dict:
             for i,snap in enumerate(snapshots[:count]):snap["debugger"]={"engine":"instrumentation-fallback","display_source_line":demo["display_stage_lines"][i],"display_source_text":demo["display_stage_text"][i]}
             engine,fallback="instrumentation-fallback",True
         snapshots=[_normalize_snapshot(s,demo) for s in snapshots]
-        return {"demo_id":demo_id,"title":demo["title"],"subtitle":demo["subtitle"],"category":demo["category"],"renderer":demo["renderer"],"pseudo":demo["pseudo"],"display_source":demo["display_source"],"pointer_names":demo.get("pointer_names",[]),"snapshot_schema":"five-view.snapshot.v1","compiler":"clang","debug_build":True,"execution_engine":engine,"lldb_breakpoint_hits":lr["breakpoint_hits"],"lldb_frame_reads":lr["frame_reads"],"lldb_fallback":fallback,"timeline_mode":"source-line","storage_semantics":"LLDB 负责真实源码断点与局部变量读取；结构化快照归一化为统一 snapshot model，再由数据结构专用 Renderer 解释。","address_note":"地址来自本次 Render 容器中的真实 C 调试进程；ASLR 会使不同运行地址变化。","snapshots":snapshots,"stdout":program_stdout}
+        return {"demo_id":demo_id,"title":demo["title"],"subtitle":demo["subtitle"],"category":demo["category"],"renderer":demo["renderer"],"graph_mode":demo.get("graph_mode"),"pseudo":demo["pseudo"],"display_source":demo["display_source"],"pointer_names":demo.get("pointer_names",[]),"snapshot_schema":"five-view.snapshot.v1","compiler":"clang","debug_build":True,"execution_engine":engine,"lldb_breakpoint_hits":lr["breakpoint_hits"],"lldb_frame_reads":lr["frame_reads"],"lldb_fallback":fallback,"timeline_mode":"source-line","storage_semantics":"LLDB 负责真实源码断点与局部变量读取；结构化快照归一化为统一 snapshot model，再由数据结构专用 Renderer 解释。","address_note":"地址来自本次 Render 容器中的真实 C 调试进程；ASLR 会使不同运行地址变化。","snapshots":snapshots,"stdout":program_stdout}
 
 
 def _debugger_capability()->dict:
