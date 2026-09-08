@@ -12,7 +12,10 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
-from .extended_demos import EXTENDED_DEMOS, EXTENDED_DETAILS
+try:
+    from .extended_demos import EXTENDED_DEMOS, EXTENDED_DETAILS
+except ImportError:  # Render starts uvicorn from backend/ as `app:app`.
+    from extended_demos import EXTENDED_DEMOS, EXTENDED_DETAILS
 
 APP_VERSION = "1.6.0"
 app = FastAPI(title="Data Structure Five-View Lab API", version=APP_VERSION)
