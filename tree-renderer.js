@@ -68,7 +68,7 @@
       svg.push(`<rect class="tree-node-box" x="${pos.x - 52}" y="${pos.y - 34}" width="104" height="68" rx="15"/>`);
       svg.push(`<text class="tree-node-value" x="${pos.x}" y="${pos.y + 7}" text-anchor="middle">${escapeHtml(node.data)}</text>`);
       svg.push(`<text class="tree-node-address" x="${pos.x}" y="${pos.y + 26}" text-anchor="middle">${escapeHtml(shortAddress(address))}</text>`);
-      const metadata = [node.color ? node.color.toUpperCase() : "", Number.isFinite(Number(node.height)) ? `h=${node.height}` : "", Number.isFinite(Number(node.balance)) ? `bf=${node.balance}` : "", Number.isFinite(Number(node.priority)) ? `p=${node.priority}` : ""].filter(Boolean).join(" · ");
+      const metadata = [node.color ? node.color.toUpperCase() : "", node.range ? node.range : "", Number.isFinite(Number(node.sum)) ? `sum=${node.sum}` : "", Number.isFinite(Number(node.height)) ? `h=${node.height}` : "", Number.isFinite(Number(node.balance)) ? `bf=${node.balance}` : "", Number.isFinite(Number(node.priority)) ? `p=${node.priority}` : ""].filter(Boolean).join(" · ");
       if (metadata) svg.push(`<text class="tree-node-meta" x="${pos.x}" y="${pos.y + 49}" text-anchor="middle">${escapeHtml(metadata)}</text>`);
       if (badges.length) svg.push(`<text class="tree-node-badge" x="${pos.x}" y="${pos.y - 46}" text-anchor="middle">${badges.join(" · ")}</text>`);
       if (pos.detached || node.detached) svg.push(`<text class="tree-detached-label" x="${pos.x}" y="${pos.y + 51}" text-anchor="middle">尚未连接到树</text>`);
@@ -81,9 +81,12 @@
     const direction = Number(values.direction);
     let comparison = "准备开始递归插入";
     if (isRedBlack) {
-      const cases = {0:"按 BST 次序插入红色新结点",1:"红父红叔：父叔染黑、祖父染红",2:"红父黑叔 + LL 外侧：右旋祖父",3:"旋转与重染色已完成",4:"检查并恢复全部红黑性质",10:"LL 外侧冲突",11:"LL 重染色，准备右旋祖父",12:"LL 单旋修复完成",20:"RR 外侧冲突",21:"RR 重染色，准备左旋祖父",22:"RR 单旋修复完成",30:"LR 内侧冲突",31:"LR 第一次左旋父结点",32:"LR 第二次右旋祖父完成",40:"RL 内侧冲突",41:"RL 第一次右旋父结点",42:"RL 第二次左旋祖父完成"};
+      const cases = {0:"按 BST 次序插入红色新结点",1:"红父红叔：父叔染黑、祖父染红",2:"红父黑叔 + LL 外侧：右旋祖父",3:"旋转与重染色已完成",4:"检查并恢复全部红黑性质",10:"LL 外侧冲突",11:"LL 重染色，准备右旋祖父",12:"LL 单旋修复完成",20:"RR 外侧冲突",21:"RR 重染色，准备左旋祖父",22:"RR 单旋修复完成",30:"LR 内侧冲突",31:"LR 第一次左旋父结点",32:"LR 第二次右旋祖父完成",40:"RL 内侧冲突",41:"RL 第一次右旋父结点",42:"RL 第二次左旋祖父完成",100:"删除双黑：兄弟为红",101:"交换颜色并旋转，转换为黑兄弟",102:"红父吸收双黑",110:"黑兄弟且两个侄结点均黑",111:"兄弟染红，双黑上推到根",120:"黑兄弟：近侄红、远侄黑",121:"旋转兄弟，转换为远侄红",122:"旋转父结点，双黑消除",130:"黑兄弟且远侄为红",131:"旋转重染色，删除修复完成"};
       comparison = cases[Number(values.case_code)] || "执行红黑树插入修复";
-    } else if (isNullPointer(values.current)) comparison = `current = NULL，创建 ${values.target}`;
+    } else if (runMeta.tree_mode === "avl") comparison = `AVL 高度/平衡修复 · target=${values.target}`;
+    else if (runMeta.tree_mode === "treap") comparison = `Treap 键序 + 优先级修复 · target=${values.target}`;
+    else if (runMeta.tree_mode === "segment-tree") comparison = `区间查询/更新 · aggregate=${values.target}`;
+    else if (isNullPointer(values.current)) comparison = `current = NULL，创建 ${values.target}`;
     else if (direction < 0) comparison = `${values.target} < 当前节点，进入 left`;
     else if (direction > 0) comparison = `${values.target} > 当前节点，进入 right`;
     else if (!isNullPointer(values.new_node)) comparison = `插入 ${values.target} 完成`;

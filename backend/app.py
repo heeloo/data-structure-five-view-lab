@@ -12,8 +12,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
+from .extended_demos import EXTENDED_DEMOS, EXTENDED_DETAILS
 
-APP_VERSION = "1.5.0"
+APP_VERSION = "1.6.0"
 app = FastAPI(title="Data Structure Five-View Lab API", version=APP_VERSION)
 
 app.add_middleware(
@@ -796,6 +797,8 @@ DEMO_DETAILS = {
     "adjacency-list-build-edit": {"method":"无向图邻接表建图、加边、删边","position":"heads[A..D] 对应的边链表","storage":"表头数组 + 动态 Edge(to,next) 结点","initial":"4 个顶点，0 条边","result":"删除 A-C 后保留 A-B、B-D、C-D","time":"头插加边 O(1)，删除 O(deg(u)+deg(v))","space":"O(V+E)","precondition":"顶点编号合法；演示不允许重复边","key":"无向边必须在两条邻接链各存一份；删除时两侧都要摘除并 free"},
 }
 
+DEMOS.update(EXTENDED_DEMOS)
+DEMO_DETAILS.update(EXTENDED_DETAILS)
 for _demo_id, _details in DEMO_DETAILS.items():
     DEMOS[_demo_id]["details"] = _details
 
@@ -889,7 +892,7 @@ def _normalize_snapshot(raw:dict,demo:dict)->dict:
         for name in demo.get("pointer_names",[]):
             value=values.get(name)
             if value and str(value) in by_addr:relations.append({"from":name,"to":str(value),"kind":"variable-pointer"})
-    elif renderer=="array":
+    elif renderer in {"array","binary-heap"}:
         values=raw.get("values",{});array=raw.get("array",[])
         for name,value in values.items():variables.append({"name":name,"type":"int","value":value,"kind":"scalar"})
         for cell in array:objects.append({"id":f"cell-{cell['index']}","type":"int","address":cell.get("address"),"label":str(cell["index"]),"fields":{"value":cell.get("value"),"active":cell.get("active")}})
@@ -911,7 +914,7 @@ def _normalize_snapshot(raw:dict,demo:dict)->dict:
         for name,value in values.items():variables.append({"name":name,"type":"Node *" if name in {"root","current","new_node"} else "int","value":value,"kind":"pointer" if name in {"root","current","new_node"} else "scalar"})
         for node in nodes:
             address=str(node.get("address"));fields={"data":node.get("data"),"left":node.get("left"),"right":node.get("right"),"detached":node.get("detached",False)}
-            for metadata in ("parent","color","height","balance","priority"):
+            for metadata in ("parent","color","height","balance","priority","range","sum"):
                 if metadata in node:fields[metadata]=node.get(metadata)
             objects.append({"id":address,"type":"TreeNode","address":address,"label":str(node.get("data")),"fields":fields})
             for field in ("left","right"):
@@ -920,6 +923,21 @@ def _normalize_snapshot(raw:dict,demo:dict)->dict:
         for name in demo.get("pointer_names",[]):
             value=str(values.get(name))
             if value in by_addr:relations.append({"from":name,"to":value,"kind":"variable-pointer"})
+    elif renderer=="hash-table":
+        values=raw.get("values",{});slots=raw.get("hash",[])
+        for name,value in values.items():variables.append({"name":name,"type":"int","value":value,"kind":"slot-index" if name=="probe" else "scalar"})
+        for slot in slots:objects.append({"id":f"hash-slot-{slot['index']}","type":"HashSlot","address":slot.get("address"),"label":str(slot["index"]),"fields":{"key":slot.get("key"),"value":slot.get("value"),"state":slot.get("state")}})
+    elif renderer=="union-find":
+        values=raw.get("values",{});items=raw.get("dsu",[])
+        for name,value in values.items():variables.append({"name":name,"type":"int","value":value,"kind":"element-index" if name in {"current","root_a","root_b"} else "scalar"})
+        for item in items:
+            objects.append({"id":f"dsu-{item['index']}","type":"DisjointSetNode","address":item.get("address"),"label":str(item["index"]),"fields":{"parent":item.get("parent"),"rank":item.get("rank")}})
+            if item.get("parent")!=item.get("index"):relations.append({"from":f"dsu-{item['index']}","to":f"dsu-{item['parent']}","kind":"parent-link"})
+    elif renderer=="trie":
+        values=raw.get("values",{});trie=raw.get("trie",{})
+        for name,value in values.items():variables.append({"name":name,"type":"int","value":value,"kind":"node-index" if name=="current" else "scalar"})
+        for node in trie.get("nodes",[]):objects.append({"id":f"trie-{node['id']}","type":"TrieNode","address":node.get("address"),"label":node.get("char"),"fields":{"parent":node.get("parent"),"terminal":node.get("terminal")}})
+        for edge in trie.get("edges",[]):relations.append({"from":f"trie-{edge['from']}","to":f"trie-{edge['to']}","field":edge.get("char"),"kind":"character-edge"})
     elif renderer=="graph":
         values=raw.get("values",{});graph=raw.get("graph",{});vertices=graph.get("vertices",[])
         for name,value in values.items():variables.append({"name":name,"type":"int","value":value,"kind":"vertex-index" if name=="current" else "scalar"})

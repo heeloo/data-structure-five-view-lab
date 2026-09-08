@@ -174,6 +174,23 @@
 :root[data-theme="light"] .merge-checks span { color: #526d86; }
 :root[data-theme="light"] .merge-checks .pass { border-color: #58a783; color: #176f4d; }
 :root[data-theme="light"] .merge-checks .fail { border-color: #cc7581; color: #9b2437; }
+:root[data-theme="light"] .ext-visual { color: #19324a; }
+:root[data-theme="light"] .ext-legend,
+:root[data-theme="light"] .dsu-label { color: #526d86; }
+:root[data-theme="light"] .ext-card,
+:root[data-theme="light"] .hash-slot,
+:root[data-theme="light"] .trie-node { border-color: #8fb0ca; background: #ffffff; }
+:root[data-theme="light"] .ext-card b,
+:root[data-theme="light"] .hash-slot b,
+:root[data-theme="light"] .trie-node b { color: #176aa7; }
+:root[data-theme="light"] .ext-card.root,
+:root[data-theme="light"] .trie-node.terminal { border-color: #58a783; background: #def5e9; }
+:root[data-theme="light"] .ext-card.root b,
+:root[data-theme="light"] .trie-node.terminal b { color: #176f4d; }
+:root[data-theme="light"] .hash-slot.state-2 { border-color: #c77a52; background: #fff0e8; }
+:root[data-theme="light"] .ext-meta,
+:root[data-theme="light"] .dsu-paths span,
+:root[data-theme="light"] .trie-edges span { border-color: #d2dce7; background: #f7fafc; color: #526d86; }
 
 @media (max-width: 1080px) {
   .demo-details { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
