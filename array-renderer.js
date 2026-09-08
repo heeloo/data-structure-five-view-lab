@@ -68,7 +68,13 @@
 
     const meta = document.createElement("div");
     meta.className = "array-visual-meta";
-    meta.innerHTML = `
+    const boundaryMode = Object.hasOwn(values, "found") || Object.hasOwn(values, "status");
+    meta.innerHTML = boundaryMode ? `
+      <div><strong>length / capacity</strong><span>${length} / ${capacity}</span></div>
+      <div><strong>当前值 / 位置</strong><span>${values.value ?? "—"} / ${Number.isFinite(pos) ? pos : "—"}</span></div>
+      <div><strong>查找结果</strong><span>${Number(values.found) >= 0 ? `下标 ${values.found}` : "未命中"}</span></div>
+      <div><strong>状态</strong><span>${Number(values.status) < 0 ? "容量已满 · 拒绝" : Number(values.status) === 2 ? "尾插成功" : Number(values.status) === 1 ? "删除成功" : "处理中"}</span></div>
+    ` : `
       <div><strong>length</strong><span>${length}</span></div>
       <div><strong>capacity</strong><span>${capacity}</span></div>
       <div><strong>插入值</strong><span>${values.value ?? "—"}</span></div>

@@ -79,6 +79,7 @@
 :root[data-theme="light"] .tree-comparison,
 :root[data-theme="light"] .tree-addresses,
 :root[data-theme="light"] .tree-call-stack,
+:root[data-theme="light"] .adjacency-lists,
 :root[data-theme="light"] .graph-runtime section { border-color: #d2dce7; background: #f7fafc; }
 :root[data-theme="light"] .demo-details dt,
 :root[data-theme="light"] .array-visual-meta strong,
@@ -87,6 +88,13 @@
 :root[data-theme="light"] .tree-call-stack > strong,
 :root[data-theme="light"] .tree-addresses span,
 :root[data-theme="light"] .graph-runtime strong { color: #526d86; }
+:root[data-theme="light"] .adjacency-lists > strong { color: #526d86; }
+:root[data-theme="light"] .adjacency-row + .adjacency-row { border-color: #dfe7ee; }
+:root[data-theme="light"] .adjacency-row.is-current { background: #fff8df; }
+:root[data-theme="light"] .adjacency-head { border-color: #806eb0; background: #eee9ff; color: #382d5e; }
+:root[data-theme="light"] .adjacency-head b { color: #382d5e; }
+:root[data-theme="light"] .adjacency-edge-card { border-color: #8fb0ca; background: #ffffff; color: #19324a; }
+:root[data-theme="light"] .adjacency-edge-card b { color: #176aa7; }
 :root[data-theme="light"] .demo-details dd,
 :root[data-theme="light"] .array-visual-meta span,
 :root[data-theme="light"] .linear-meta span,

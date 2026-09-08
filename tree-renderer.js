@@ -81,7 +81,7 @@
     const direction = Number(values.direction);
     let comparison = "准备开始递归插入";
     if (isRedBlack) {
-      const cases = {0:"按 BST 次序插入红色新结点",1:"红父红叔：父叔染黑、祖父染红",2:"红父黑叔 + LL 外侧：右旋祖父",3:"旋转与重染色已完成",4:"检查并恢复全部红黑性质"};
+      const cases = {0:"按 BST 次序插入红色新结点",1:"红父红叔：父叔染黑、祖父染红",2:"红父黑叔 + LL 外侧：右旋祖父",3:"旋转与重染色已完成",4:"检查并恢复全部红黑性质",10:"LL 外侧冲突",11:"LL 重染色，准备右旋祖父",12:"LL 单旋修复完成",20:"RR 外侧冲突",21:"RR 重染色，准备左旋祖父",22:"RR 单旋修复完成",30:"LR 内侧冲突",31:"LR 第一次左旋父结点",32:"LR 第二次右旋祖父完成",40:"RL 内侧冲突",41:"RL 第一次右旋父结点",42:"RL 第二次左旋祖父完成"};
       comparison = cases[Number(values.case_code)] || "执行红黑树插入修复";
     } else if (isNullPointer(values.current)) comparison = `current = NULL，创建 ${values.target}`;
     else if (direction < 0) comparison = `${values.target} < 当前节点，进入 left`;

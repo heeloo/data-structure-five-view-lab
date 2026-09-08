@@ -39,6 +39,21 @@
 .graph-node-metric { fill: #9ed6ff; font: 800 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .graph-current-label { fill: #f2cf75; font: 800 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
+.adjacency-lists { margin: -2px 0 14px; padding: 14px; border: 1px solid #203c58; border-radius: 11px; background: #081422; }
+.adjacency-lists > strong { display: block; margin-bottom: 10px; color: #8fa7bf; font-size: 10px; letter-spacing: .08em; }
+.adjacency-row { display: flex; align-items: center; gap: 7px; min-height: 54px; padding: 7px 8px; border-radius: 9px; overflow-x: auto; }
+.adjacency-row + .adjacency-row { border-top: 1px solid #18324a; }
+.adjacency-row.is-current { background: rgba(242, 207, 117, .07); box-shadow: inset 3px 0 #f2cf75; }
+.adjacency-row > i { flex: 0 0 auto; color: #536d86; font-style: normal; }
+.adjacency-head,
+.adjacency-edge-card { flex: 0 0 auto; min-width: 94px; padding: 7px 9px; border: 1px solid #315776; border-radius: 8px; background: #0b1c2d; color: #d8ecff; font: 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.adjacency-head { min-width: 106px; border-color: #7864ad; background: #211b3b; }
+.adjacency-head b { color: #e3dcff; font-size: 15px; }
+.adjacency-edge-card b { color: #9ed6ff; }
+.adjacency-head small,
+.adjacency-edge-card small { display: block; margin-top: 3px; color: #7892ad; font-size: 8px; }
+.adjacency-null { flex: 0 0 auto; color: #6f879e; font: 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
 .graph-runtime { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 10px; }
 .graph-runtime section { min-width: 0; padding: 12px 14px; border: 1px solid #203c58; border-radius: 11px; background: #081422; }
 .graph-runtime strong { color: #8fa7bf; font-size: 10px; letter-spacing: .08em; }
