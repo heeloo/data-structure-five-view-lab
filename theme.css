@@ -156,6 +156,17 @@
 :root[data-theme="light"] .tree-frame,
 :root[data-theme="light"] .graph-frame { border-color: #c2d0dc; color: #486078; }
 
+:root[data-theme="light"] .merge-legend { color: #536b83; }
+:root[data-theme="light"] .merge-legend span,
+:root[data-theme="light"] .merge-checks span { border-color: #d2dce7; background: #f7fafc; }
+:root[data-theme="light"] .merge-legend b { color: #142a3e; }
+:root[data-theme="light"] .merge-lane-label { fill: #176aa7; }
+:root[data-theme="light"] .merge-lane-label.a { fill: #6d50ad; }
+:root[data-theme="light"] .merge-lane-label.b { fill: #207d59; }
+:root[data-theme="light"] .merge-checks span { color: #526d86; }
+:root[data-theme="light"] .merge-checks .pass { border-color: #58a783; color: #176f4d; }
+:root[data-theme="light"] .merge-checks .fail { border-color: #cc7581; color: #9b2437; }
+
 @media (max-width: 1080px) {
   .demo-details { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
   .demo-details > div:last-child { grid-column: 1 / -1; }

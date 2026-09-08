@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.4.0"
 app = FastAPI(title="Data Structure Five-View Lab API", version=APP_VERSION)
 
 app.add_middleware(
@@ -119,6 +119,81 @@ int main(void) {
     head = head->next;
     free(p);
     p = NULL;
+}
+"""
+
+MERGE_SORTED_SOURCE = r'''#include <stdio.h>
+#include <stdlib.h>
+typedef struct Node { int data; struct Node *next; } Node;
+static Node *g_nodes[6];
+
+static int is_sorted(Node *head){for(Node *p=head;p&&p->next;p=p->next)if(p->data>p->next->data)return 0;return 1;}
+static int has_cycle(Node *head){Node *slow=head,*fast=head;while(fast&&fast->next){slow=slow->next;fast=fast->next->next;if(slow==fast)return 1;}return 0;}
+static int count_unique(Node *a,Node *b,Node *result){
+    Node *roots[3]={a,b,result},*seen[6]={0};int count=0;
+    for(int r=0;r<3;r++)for(Node *p=roots[r];p;p=p->next){for(int i=0;i<count;i++)if(seen[i]==p)return -1;if(count>=6)return -1;seen[count++]=p;}
+    return count;
+}
+__attribute__((noinline)) static void snap(const char *step,Node *p1,Node *p2,Node *result,Node *tail,Node *selected,int origin,int merged_count){
+    int unique=count_unique(p1,p2,result);
+    printf("SNAPSHOT:{\"step\":\"%s\",",step);
+    printf("\"values\":{\"result\":\"%p\",\"p1\":\"%p\",\"p2\":\"%p\",\"tail\":\"%p\",\"selected\":\"%p\",\"origin\":%d,\"merged_count\":%d,\"total_nodes\":6},",(void*)result,(void*)p1,(void*)p2,(void*)tail,(void*)selected,origin,merged_count);
+    printf("\"checks\":{\"all_nodes_accounted\":%s,\"unique_nodes\":%d,\"result_sorted\":%s,\"result_acyclic\":%s,\"allocations_during_merge\":0},",unique==6?"true":"false",unique,is_sorted(result)?"true":"false",has_cycle(result)?"false":"true");
+    printf("\"heap\":[");
+    for(int i=0;i<6;i++){Node *n=g_nodes[i];if(i)printf(",");printf("{\"name\":\"%c%d\",\"address\":\"%p\",\"data\":%d,\"next\":\"%p\"}",i<3?'A':'B',i<3?i+1:i-2,(void*)n,n->data,(void*)n->next);}
+    printf("]}\n");
+}
+static Node *make_node(int value){Node *n=(Node*)malloc(sizeof(Node));if(!n)exit(2);n->data=value;n->next=NULL;return n;}
+static Node *merge_sorted(Node *head1,Node *head2){
+    Node *p1=head1,*p2=head2,*result=NULL,*tail=NULL,*selected=NULL,*next=NULL;int origin=0,merged_count=0;
+    snap("初始：两条升序链表尚未合并",p1,p2,result,tail,selected,origin,merged_count); /* TRACE_STAGE_1 */
+    while(p1&&p2){
+        if(p1->data<=p2->data){selected=p1;next=p1->next;p1=next;origin=1;}
+        else{selected=p2;next=p2->next;p2=next;origin=2;}
+        selected->next=NULL;
+        if(!result)result=tail=selected;else{tail->next=selected;tail=selected;}
+        merged_count++;char step[120];snprintf(step,sizeof(step),"选择 %d：从链表 %c 摘下并接到结果尾部",selected->data,origin==1?'A':'B');
+        snap(step,p1,p2,result,tail,selected,origin,merged_count); /* TRACE_STAGE_2 */
+    }
+    Node *rest=p1?p1:p2;origin=p1?1:2;if(!result)result=rest;else tail->next=rest;
+    while(rest){tail=rest;rest=rest->next;merged_count++;}p1=NULL;p2=NULL;selected=tail;
+    snap("一条链表耗尽：直接串接剩余有序段，原地合并完成",p1,p2,result,tail,selected,origin,merged_count); /* TRACE_STAGE_3 */
+    return result;
+}
+int main(void){
+    setvbuf(stdout,NULL,_IONBF,0);int a_values[3]={1,4,7},b_values[3]={2,3,8};
+    for(int i=0;i<3;i++){g_nodes[i]=make_node(a_values[i]);g_nodes[i+3]=make_node(b_values[i]);}
+    for(int i=0;i<2;i++){g_nodes[i]->next=g_nodes[i+1];g_nodes[i+3]->next=g_nodes[i+4];}
+    Node *result=merge_sorted(g_nodes[0],g_nodes[3]);
+    printf("PROGRAM_STDOUT:merged=");for(Node *p=result;p;p=p->next)printf("%d%s",p->data,p->next?" ":"");printf(" nodes=6 allocations_during_merge=0\n");
+    for(Node *p=result,*next_node;p;p=next_node){next_node=p->next;free(p);}return 0;
+}
+'''
+
+MERGE_SORTED_DISPLAY = """Node *merge_sorted(Node *head1, Node *head2) {
+    Node *p1 = head1, *p2 = head2;
+    Node *result = NULL, *tail = NULL;
+
+    while (p1 != NULL && p2 != NULL) {
+        Node *selected;
+        if (p1->data <= p2->data) {
+            selected = p1;
+            p1 = p1->next;
+        } else {
+            selected = p2;
+            p2 = p2->next;
+        }
+
+        selected->next = NULL;
+        if (result == NULL) result = selected;
+        else tail->next = selected;
+        tail = selected;
+    }
+
+    Node *rest = p1 != NULL ? p1 : p2;
+    if (tail != NULL) tail->next = rest;
+    else result = rest;
+    return result;
 }
 """
 
@@ -473,6 +548,7 @@ int main(void) {
 DEMOS = {
     "linked-list-insert": {"title":"单链表：头插一个新结点","subtitle":"节点与指针关系视图","category":"linked-list","renderer":"singly-linked-list","pseudo":["1. 建立原链表 head -> a","2. 申请新结点 s","3. s->next = head","4. head = s"],"display_source":INSERT_DISPLAY,"source":INSERT_SOURCE,"display_stage_lines":[14,18,20,21],"display_stage_text":["head = a;","s->next = NULL;","s->next = head;","head = s;"],"frame_vars":["head","a","s"],"pointer_names":["head","a","s"]},
     "linked-list-delete-head": {"title":"单链表：删除首元结点","subtitle":"脱链与 free 分开显示","category":"linked-list","renderer":"singly-linked-list","pseudo":["1. 原链表 head -> a -> b","2. p = head 保存待删除结点","3. head = head->next 越过 a","4. free(p) 释放原首结点"],"display_source":DELETE_DISPLAY,"source":DELETE_SOURCE,"display_stage_lines":[16,17,18,19],"display_stage_text":["p = head;","head = head->next;","free(p);","p = NULL;"],"frame_vars":["head","a","b","p"],"pointer_names":["head","a","b","p"]},
+    "merge-two-sorted-lists-in-place": {"title":"算法题：两个有序链表原地合并","subtitle":"复用全部原结点；比较、摘接、尾指针推进与剩余段串接同步显示","category":"algorithm","renderer":"multi-linked-list","problem_mode":"linked-list-merge","pseudo":["1. 输入 A: 1 → 4 → 7，B: 2 → 3 → 8","2. 比较 p1 与 p2，摘下较小结点 1 接到 result","3. 摘下 2，再摘下 3，tail 持续后移","4. 摘下 4、7，此时链表 A 耗尽","5. 将链表 B 的剩余有序段 8 直接串接到 tail","6. 验证结果 1 → 2 → 3 → 4 → 7 → 8：有序、无环、6 个原结点各出现一次"],"display_source":MERGE_SORTED_DISPLAY,"source":MERGE_SORTED_SOURCE,"display_stage_lines":[2,8,11,11,8,8,22],"display_stage_text":["Node *p1 = head1, *p2 = head2;","selected = p1;  // 选择 1","selected = p2;  // 选择 2","selected = p2;  // 选择 3","selected = p1;  // 选择 4","selected = p1;  // 选择 7","tail->next = rest;  // 串接剩余的 8"],"frame_vars":["p1","p2","result","tail","selected","next","origin","merged_count"],"pointer_names":["result","p1","p2","tail","selected"],"breakpoint_mode":"snap-caller"},
     "sequence-list-insert": {"title":"顺序表：指定位置插入（中间插入）","subtitle":"下标 2 插入；从后向前搬移元素，并非尾插法","category":"array","renderer":"array","pseudo":["1. 原数组 [10,20,30,40]，在下标 2 插入 99","2. 从尾部开始向右搬移 arr[3]","3. 继续搬移 arr[2]","4. arr[2] = 99，length++"],"display_source":ARRAY_DISPLAY,"source":ARRAY_SOURCE,"display_stage_lines":[7,8,10,12],"display_stage_text":["int i = 4;","arr[4] = arr[3];","arr[3] = arr[2];","arr[2] = value;"],"frame_vars":["arr","length","capacity","pos","value","i"],"pointer_names":[]},
     "sequence-list-append": {"title":"顺序表：尾插法（append）","subtitle":"在下标 length 直接写入；容量充足时无需搬移元素","category":"array","renderer":"array","pseudo":["1. 检查 length < capacity，确认表尾有空闲容量","2. pos = length，定位第一个空闲槽位","3. arr[pos] = 50，写入表尾","4. length++，新元素纳入有效区间"],"display_source":ARRAY_APPEND_DISPLAY,"source":ARRAY_APPEND_SOURCE,"display_stage_lines":[5,8,9],"display_stage_text":["int pos = length;","arr[pos] = value;","length++;"],"frame_vars":["arr","length","capacity","pos","value","i"],"pointer_names":[]},
     "stack-push-pop": {"title":"顺序栈：push 与 pop","subtitle":"栈顶移动、有效区间与残留内存值同步显示","category":"stack","renderer":"stack","pseudo":["1. 原栈自底向上为 [10, 20]","2. top++，为新元素预留栈顶位置","3. data[top] = 30，push 完成","4. popped = data[top]，读取栈顶","5. top--，pop 完成（物理槽位仍保留 30）"],"display_source":STACK_DISPLAY,"source":STACK_SOURCE,"display_stage_lines":[3,8,9,12,13],"display_stage_text":["int top = 1;","top++;","data[top] = value;","popped = data[top];","top--;"],"frame_vars":["data","top","capacity","value","popped"],"pointer_names":[]},
@@ -486,6 +562,7 @@ DEMOS = {
 DEMO_DETAILS = {
     "linked-list-insert": {"method":"头插法","position":"链表表头","storage":"动态单链表（堆结点 + next 指针）","initial":"10 → NULL","result":"20 → 10 → NULL","time":"O(1)","space":"O(1)，另分配 1 个新结点","precondition":"内存分配成功","key":"先令 s->next = head，再修改 head，避免原链表丢失"},
     "linked-list-delete-head": {"method":"删除首元结点","position":"链表表头","storage":"动态单链表（堆结点 + next 指针）","initial":"10 → 20 → NULL","result":"20 → NULL","time":"O(1)","space":"O(1)","precondition":"head != NULL","key":"先保存待删结点，再移动 head，最后 free 原结点"},
+    "merge-two-sorted-lists-in-place": {"method":"双指针原地有序合并","position":"每轮比较 p1->data 与 p2->data，接到 tail 后方","storage":"两条输入单链表 + 一条结果链，共用原有 6 个堆结点","initial":"A: 1 → 4 → 7；B: 2 → 3 → 8","result":"result: 1 → 2 → 3 → 4 → 7 → 8","time":"O(m + n)","space":"O(1)，合并阶段不分配数据结点","precondition":"两条输入链均升序、无环且不共享结点","key":"先保存 next，再摘下 selected；一条链耗尽后直接串接剩余段。每个原结点必须恰好出现一次"},
     "sequence-list-insert": {"method":"指定位置插入（中间插入，非尾插）","position":"下标 pos = 2","storage":"顺序存储（连续数组）","initial":"[10, 20, 30, 40]，length=4","result":"[10, 20, 99, 30, 40]，length=5","time":"O(n)","space":"O(1)","precondition":"0 ≤ pos ≤ length 且 length < capacity","key":"必须从后向前搬移 [pos, length-1]，否则会覆盖尚未复制的元素"},
     "sequence-list-append": {"method":"尾插法（append）","position":"表尾 pos = length = 4","storage":"顺序存储（连续数组）","initial":"[10, 20, 30, 40]，length=4","result":"[10, 20, 30, 40, 50]，length=5","time":"O(1)（本演示容量充足）","space":"O(1)","precondition":"length < capacity；若容量不足需先扩容","key":"写入 arr[length] 后再执行 length++，不需要搬移已有元素"},
     "stack-push-pop": {"method":"顺序栈入栈 + 出栈","position":"仅操作栈顶 top","storage":"顺序栈（连续数组，LIFO）","initial":"栈底 [10, 20] 栈顶","result":"push 30 后再 pop，逻辑栈恢复为 [10, 20]","time":"push O(1)，pop O(1)","space":"O(1)","precondition":"push 前栈未满；pop 前栈非空","key":"top 决定逻辑有效区；pop 后槽位中的 30 只是物理残留"},
@@ -578,9 +655,10 @@ def _run_demo_lldb(exe:Path,td:str,demo:dict)->dict:
 
 def _normalize_snapshot(raw:dict,demo:dict)->dict:
     renderer=demo["renderer"];variables=[];objects=[];relations=[]
-    if renderer=="singly-linked-list":
+    if renderer in {"singly-linked-list","multi-linked-list"}:
         values=raw.get("values",{});heap=raw.get("heap",[]);by_addr={str(n.get("address")):n for n in heap}
-        for name,value in values.items():variables.append({"name":name,"type":"Node *","value":value,"kind":"pointer"})
+        pointer_names=set(demo.get("pointer_names",[]))
+        for name,value in values.items():variables.append({"name":name,"type":"Node *" if name in pointer_names else "int","value":value,"kind":"pointer" if name in pointer_names else "scalar"})
         for node in heap:
             objects.append({"id":str(node.get("address")),"type":"Node","address":node.get("address"),"label":node.get("name"),"fields":{"data":node.get("data"),"next":node.get("next")}})
             nxt=node.get("next")
@@ -627,6 +705,7 @@ def _normalize_snapshot(raw:dict,demo:dict)->dict:
         for vertex in vertices:
             if vertex.get("parent",-1)>=0:relations.append({"from":f"vertex-{vertex['parent']}","to":f"vertex-{vertex['id']}","kind":"traversal-tree"})
     visualization={"renderer":renderer,"category":demo["category"]}
+    if renderer=="multi-linked-list":visualization["mode"]=demo.get("problem_mode","linked-list-problem")
     if renderer=="graph":visualization["mode"]=demo.get("graph_mode")
     if renderer in {"binary-tree","red-black-tree"}:visualization["mode"]=demo.get("tree_mode","binary-search")
     raw["model"]={"schema":"five-view.snapshot.v1","variables":variables,"objects":objects,"relations":relations,"execution":raw.get("debugger",{}),"visualization":visualization}
@@ -646,7 +725,7 @@ def _run_demo(demo_id:str)->dict:
             for i,snap in enumerate(snapshots[:count]):snap["debugger"]={"engine":"instrumentation-fallback","display_source_line":demo["display_stage_lines"][i],"display_source_text":demo["display_stage_text"][i]}
             engine,fallback="instrumentation-fallback",True
         snapshots=[_normalize_snapshot(s,demo) for s in snapshots]
-        return {"demo_id":demo_id,"title":demo["title"],"subtitle":demo["subtitle"],"details":demo.get("details",{}),"category":demo["category"],"renderer":demo["renderer"],"graph_mode":demo.get("graph_mode"),"tree_mode":demo.get("tree_mode"),"pseudo":demo["pseudo"],"display_source":demo["display_source"],"pointer_names":demo.get("pointer_names",[]),"snapshot_schema":"five-view.snapshot.v1","compiler":"clang","debug_build":True,"execution_engine":engine,"lldb_breakpoint_hits":lr["breakpoint_hits"],"lldb_frame_reads":lr["frame_reads"],"lldb_fallback":fallback,"timeline_mode":"source-line","storage_semantics":"LLDB 负责真实源码断点与局部变量读取；结构化快照归一化为统一 snapshot model，再由数据结构专用 Renderer 解释。","address_note":"地址来自本次 Render 容器中的真实 C 调试进程；ASLR 会使不同运行地址变化。","snapshots":snapshots,"stdout":program_stdout}
+        return {"demo_id":demo_id,"title":demo["title"],"subtitle":demo["subtitle"],"details":demo.get("details",{}),"category":demo["category"],"renderer":demo["renderer"],"problem_mode":demo.get("problem_mode"),"graph_mode":demo.get("graph_mode"),"tree_mode":demo.get("tree_mode"),"pseudo":demo["pseudo"],"display_source":demo["display_source"],"pointer_names":demo.get("pointer_names",[]),"snapshot_schema":"five-view.snapshot.v1","compiler":"clang","debug_build":True,"execution_engine":engine,"lldb_breakpoint_hits":lr["breakpoint_hits"],"lldb_frame_reads":lr["frame_reads"],"lldb_fallback":fallback,"timeline_mode":"source-line","storage_semantics":"LLDB 负责真实源码断点与局部变量读取；结构化快照归一化为统一 snapshot model，再由数据结构专用 Renderer 解释。","address_note":"地址来自本次 Render 容器中的真实 C 调试进程；ASLR 会使不同运行地址变化。","snapshots":snapshots,"stdout":program_stdout}
 
 
 def _debugger_capability()->dict:
@@ -666,7 +745,7 @@ def root():return utf8_json({"service":"five-view-lab-backend","status":"ok","do
 @app.get("/health")
 def health():return utf8_json({"status":"ok","service":"five-view-lab-backend","version":APP_VERSION,"snapshot_schema":"five-view.snapshot.v1"})
 @app.get("/api/demos")
-def list_demos():return utf8_json([{"id":k,"title":v["title"],"subtitle":v["subtitle"],"details":v.get("details",{}),"category":v["category"],"renderer":v["renderer"],"tree_mode":v.get("tree_mode")} for k,v in DEMOS.items()])
+def list_demos():return utf8_json([{"id":k,"title":v["title"],"subtitle":v["subtitle"],"details":v.get("details",{}),"category":v["category"],"renderer":v["renderer"],"problem_mode":v.get("problem_mode"),"tree_mode":v.get("tree_mode")} for k,v in DEMOS.items()])
 @app.get("/api/debugger-capability")
 def debugger_capability():return utf8_json(_debugger_capability())
 @app.post("/api/run-demo")

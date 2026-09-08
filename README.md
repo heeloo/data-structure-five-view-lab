@@ -4,7 +4,7 @@ GitHub Pages 前端 + Render 后端的数据结构可视化实验室。
 
 五个同步视角：PSEUDO / C / STORAGE / POINTER / EXECUTION。
 
-## v1.3 演示
+## v1.4 演示
 
 - 单链表头插、删除首元结点
 - 顺序表指定位置插入（中间插入，需要搬移元素）
@@ -15,6 +15,7 @@ GitHub Pages 前端 + Render 后端的数据结构可视化实验室。
 - 红黑树连续插入 1、0（红父红叔重染色、红父黑叔 LL 型右旋、红黑性质验证）
 - 图的广度优先搜索 BFS（队列联动）
 - 图的深度优先搜索 DFS（递归栈联动）
+- 两个升序单链表原地合并（多链表同屏、逐结点摘接、尾指针推进、剩余段串接和自动不变量检查）
 
 每个演示都由后端使用 Clang `-O0 -g` 编译，并优先通过 LLDB 源码断点采集真实运行状态。统一 Snapshot Model 同时驱动 ALGORITHM、SOURCE、MEMORY、STRUCTURE、EXECUTION 五个视图。
 
