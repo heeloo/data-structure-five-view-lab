@@ -1,5 +1,5 @@
 .tree-visual {
-  min-width: 780px;
+  min-width: 0;
   padding: 24px 26px 28px;
 }
 
@@ -76,6 +76,13 @@
 .tree-frame.recursive { border-color: #7864ad; background: #211b3b; color: #d0c2ff; }
 
 @media (max-width: 900px) {
+  .pointer-graph svg.tree-canvas { min-width: 620px; }
   .tree-runtime { grid-template-columns: 1fr; }
   .tree-call-stack { grid-column: auto; }
+}
+
+@media (max-width: 620px) {
+  .tree-visual { padding-inline: 14px; }
+  .pointer-graph svg.tree-canvas { min-width: 560px; }
+  .tree-addresses { grid-template-columns: 1fr; }
 }
